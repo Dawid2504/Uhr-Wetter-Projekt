@@ -13,6 +13,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const detailDate = document.getElementById('detail-date');
   const detailOffset = document.getElementById('detail-offset');
 
+  // Wetter-Elemente
+  const weatherTemp = document.getElementById('weather-temp');
+  const weatherDesc = document.getElementById('weather-desc');
+  const weatherLoading = document.getElementById('weather-loading');
+  const weatherInfo = document.getElementById('weather-info');
+  const weatherError = document.getElementById('weather-error');
+
+  // Cache & WMO-Codes (Open-Meteo Weather Codes)
+  const weatherCache = {};
+  const WMO_CODES = {
+    0: 'Klar', 1: 'Überwiegend klar', 2: 'Teilweise bewölkt', 3: 'Bewölkt',
+    45: 'Nebel', 48: 'Rauchnebel',
+    51: 'Leichter Nieselregen', 53: 'Mäßiger Nieselregen', 55: 'Starker Nieselregen',
+    61: 'Leichter Regen', 63: 'Mäßiger Regen', 65: 'Starker Regen',
+    71: 'Leichter Schneefall', 73: 'Mäßiger Schneefall', 75: 'Starker Schneefall',
+    80: 'Leichte Schauer', 81: 'Mäßige Schauer', 82: 'Starke Schauer',
+    95: 'Gewitter', 96: 'Gewitter mit Hagel', 99: 'Schweres Gewitter'
+  };
+
   const allZones = typeof Intl.supportedValuesOf === 'function'
     ? Intl.supportedValuesOf('timeZone')
     : ['Europe/Berlin', 'America/New_York', 'Asia/Tokyo', 'UTC'];
@@ -54,6 +73,56 @@ document.addEventListener('DOMContentLoaded', () => {
   const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
   const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
 
+  async function getWeatherForZone(zone) {
+  // UI zurücksetzen
+  weatherLoading.style.display = 'block';
+  weatherInfo.style.display = 'none';
+  weatherError.style.display = 'none';
+
+  // Cache prüfen
+  if (weatherCache[zone]) {
+    updateWeatherUI(weatherCache[zone]);
+    return;
+  }
+
+  try {
+    // 1. Ortsname aus Timezone extrahieren (z.B. "Europe/Berlin" -> "Berlin")
+    const locationName = zone.split('/').pop().replace(/_/g, ' ');
+
+    // 2. Koordinaten holen
+    const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(locationName)}&count=1&language=de&format=json`);
+    const geoData = await geoRes.json();
+
+    if (!geoData.results?.length) throw new Error('Standort nicht gefunden');
+    const { latitude, longitude, name } = geoData.results[0];
+
+    // 3. Wetterdaten holen
+    const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&timezone=auto`);
+    const weatherData = await weatherRes.json();
+
+    const weather = {
+      temp: Math.round(weatherData.current_weather.temperature),
+      desc: WMO_CODES[weatherData.current_weather.weathercode] || 'Unbekannt',
+      location: name
+    };
+
+    weatherCache[zone] = weather; // Speichern für spätere Aufrufe
+    updateWeatherUI(weather);
+
+  } catch (error) {
+    console.warn(`⚠️ Wetter für ${zone} fehlgeschlagen:`, error);
+    weatherLoading.style.display = 'none';
+    weatherError.style.display = 'block';
+  }
+}
+
+  function updateWeatherUI(weather) {
+    weatherLoading.style.display = 'none';
+    weatherInfo.style.display = 'flex';
+    weatherTemp.textContent = `${weather.temp}°C`;
+    weatherDesc.textContent = `${weather.desc} (${weather.location})`;
+  }
+  
   function updateClocks() {
     const now = new Date();
     for (const item of zoneCards) {
@@ -92,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
     overlay.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     updateClocks();
+    getWeatherForZone(zone);
   }
 
   function closeDetail() {
