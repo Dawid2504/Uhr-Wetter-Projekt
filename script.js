@@ -20,6 +20,37 @@ document.addEventListener("DOMContentLoaded", () => {
   const weatherInfo = document.getElementById("weather-info");
   const weatherError = document.getElementById("weather-error");
 
+  // Neue Elemente
+  const weatherIcon = document.getElementById("weather-icon");
+  const forecastContainer = document.getElementById("forecast-container");
+  const forecastScroll = document.getElementById("forecast-scroll");
+
+  // Icon-Mapping (WMO-Code → Emoji)
+  // 💡 Tipp: Ersetze Emojis später durch <img>-Tags mit SVGs, falls du einheitliche Icons willst
+  const WMO_ICONS = {
+    0: "☀️",
+    1: "🌤️",
+    2: "⛅",
+    3: "☁️",
+    45: "🌫️",
+    48: "🌫️",
+    51: "🌦️",
+    53: "🌦️",
+    55: "🌧️",
+    61: "🌧️",
+    63: "🌧️",
+    65: "🌧️",
+    71: "🌨️",
+    73: "🌨️",
+    75: "❄️",
+    80: "🌦️",
+    81: "🌧️",
+    82: "⛈️",
+    95: "⛈️",
+    96: "⛈️",
+    99: "⛈️",
+  };
+
   // Cache & WMO-Codes (Open-Meteo Weather Codes)
   const weatherCache = {};
   const WMO_CODES = {
@@ -99,22 +130,19 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   async function getWeatherForZone(zone) {
-    // UI zurücksetzen
     weatherLoading.style.display = "block";
     weatherInfo.style.display = "none";
     weatherError.style.display = "none";
+    forecastContainer.style.display = "none";
 
-    // Cache prüfen
     if (weatherCache[zone]) {
       updateWeatherUI(weatherCache[zone]);
+      renderForecast(weatherCache[zone].forecast);
       return;
     }
 
     try {
-      // 1. Ortsname aus Timezone extrahieren (z.B. "Europe/Berlin" -> "Berlin")
       const locationName = zone.split("/").pop().replace(/_/g, " ");
-
-      // 2. Koordinaten holen
       const geoRes = await fetch(
         `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(locationName)}&count=1&language=de&format=json`,
       );
@@ -123,20 +151,30 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!geoData.results?.length) throw new Error("Standort nicht gefunden");
       const { latitude, longitude, name } = geoData.results[0];
 
-      // 3. Wetterdaten holen
-      const weatherRes = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&timezone=auto`,
-      );
+      // Aktuelle Wetterdaten + 7-Tage-Vorhersage abrufen
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
+      const weatherRes = await fetch(weatherUrl);
       const weatherData = await weatherRes.json();
 
+      const current = weatherData.current_weather;
+      const daily = weatherData.daily;
+
       const weather = {
-        temp: Math.round(weatherData.current_weather.temperature),
-        desc: WMO_CODES[weatherData.current_weather.weathercode] || "Unbekannt",
+        temp: Math.round(current.temperature),
+        desc: WMO_CODES[current.weathercode] || "Unbekannt",
+        icon: WMO_ICONS[current.weathercode] || "🌡️",
         location: name,
+        forecast: daily.time.slice(0, 7).map((date, i) => ({
+          day: new Date(date).toLocaleDateString("de-DE", { weekday: "short" }),
+          icon: WMO_ICONS[daily.weathercode[i]] || "🌡️",
+          max: Math.round(daily.temperature_2m_max[i]),
+          min: Math.round(daily.temperature_2m_min[i]),
+        })),
       };
 
-      weatherCache[zone] = weather; // Speichern für spätere Aufrufe
+      weatherCache[zone] = weather;
       updateWeatherUI(weather);
+      renderForecast(weather.forecast);
     } catch (error) {
       console.warn(`⚠️ Wetter für ${zone} fehlgeschlagen:`, error);
       weatherLoading.style.display = "none";
@@ -147,8 +185,27 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateWeatherUI(weather) {
     weatherLoading.style.display = "none";
     weatherInfo.style.display = "flex";
+    weatherIcon.textContent = weather.icon;
     weatherTemp.textContent = `${weather.temp}°C`;
     weatherDesc.textContent = `${weather.desc} (${weather.location})`;
+  }
+
+  function renderForecast(forecast) {
+    forecastScroll.innerHTML = "";
+    forecast.forEach((day) => {
+      const el = document.createElement("div");
+      el.className = "forecast-day";
+      el.innerHTML = `
+      <div class="forecast-day-name">${day.day}</div>
+      <div class="forecast-icon">${day.icon}</div>
+      <div class="forecast-temps">
+        <span>${day.max}°</span>
+        <span>/ ${day.min}°</span>
+      </div>
+    `;
+      forecastScroll.appendChild(el);
+    });
+    forecastContainer.style.display = "block";
   }
 
   function updateClocks() {

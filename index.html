@@ -49,10 +49,13 @@
           <div class="weather-loading" id="weather-loading">
             🌤️ Wetter wird geladen...
           </div>
+
           <div class="weather-info" id="weather-info" style="display: none">
+            <span class="weather-icon" id="weather-icon"></span>
             <span class="weather-temp" id="weather-temp">--°C</span>
             <span class="weather-desc" id="weather-desc">--</span>
           </div>
+
           <div
             class="weather-error"
             id="weather-error"
@@ -60,6 +63,25 @@
           >
             Wetter für diese Zone nicht verfügbar
           </div>
+        </div>
+
+        <!-- 7-TAGE-VORSCHAU -->
+        <div
+          class="forecast-container"
+          id="forecast-container"
+          style="display: none"
+        >
+          <h3
+            style="
+              color: var(--text-secondary);
+              margin: 20px 0 12px;
+              font-size: 1rem;
+              letter-spacing: 1px;
+            "
+          >
+            📅 7-Tage-Vorschau
+          </h3>
+          <div class="forecast-scroll" id="forecast-scroll"></div>
         </div>
         <div id="detail-offset" class="detail-offset"></div>
       </div>
