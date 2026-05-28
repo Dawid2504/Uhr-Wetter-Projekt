@@ -1,26 +1,41 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Weltzeituhr - Suche</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <main class="container">
+  <div class="container">
     <header>
       <h1>🌍 Weltzeituhr</h1>
       <p>Alle Zeitzonen der Welt</p>
+
       <div class="search-wrapper">
-        <input type="text" id="search-input" placeholder="Suche (z.B. Berlin, Tokyo, Pacific)..." autocomplete="off">
-        <button id="clear-btn" class="clear-btn" aria-label="Suche löschen">✕</button>
+        <input type="text" id="search-input" placeholder="Zeitzone suchen (z. B. Berlin, Tokyo, New York)..." autocomplete="off" />
+        <button id="clear-btn" class="clear-btn" aria-label="Suche leeren">✕</button>
       </div>
+
       <button id="show-all-btn" class="show-all-btn">Alle Zeitzonen anzeigen</button>
+
+      <p id="status-message" class="status">Tippe etwas ein oder klicke auf "Alle anzeigen".</p>
     </header>
-    
-    <div id="status-message" class="status">Tippe etwas ein oder klicke auf "Alle anzeigen".</div>
+
     <div id="clocks-container" class="clocks-grid"></div>
-  </main>
+  </div>
+
+  <!-- ===== VOLLBILD-DETAILANSICHT ===== -->
+  <div id="detail-overlay" class="detail-overlay" aria-hidden="true">
+    <button id="detail-close" class="detail-close" aria-label="Zurück">← Zurück</button>
+    <div class="detail-content">
+      <div id="detail-zone" class="detail-zone">—</div>
+      <div id="detail-time" class="detail-time">--:--:--</div>
+      <div id="detail-date" class="detail-date">…</div>
+      <div id="detail-offset" class="detail-offset"></div>
+    </div>
+  </div>
+  <!-- ===== ENDE VOLLBILD-DETAILANSICHT ===== -->
 
   <script src="script.js"></script>
 </body>
