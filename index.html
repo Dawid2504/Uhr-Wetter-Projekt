@@ -11,27 +11,48 @@
       <header>
         <h1>🌍 Weltinfos</h1>
         <p>Alle Zeitzonen der Welt und Wetterinfos auf einen Blick!</p>
-
-        <div class="search-wrapper">
-          <input
-            type="text"
-            id="search-input"
-            placeholder="Zeitzone suchen (z. B. Berlin, Tokyo, New York)..."
-            autocomplete="off"
-          />
-          <button id="clear-btn" class="clear-btn" aria-label="Suche leeren">
-            ✕
-          </button>
+        <div class="sync-status" id="sync-status">
+          ⏳ Zeit wird synchronisiert...
         </div>
+      </header>
 
-        <button id="show-all-btn" class="show-all-btn">
+      <div class="search-wrapper">
+        <input
+          type="text"
+          id="search-input"
+          placeholder="Stadt oder Region suchen..."
+          autocomplete="off"
+        />
+        <button class="clear-btn" id="clear-btn" aria-label="Suche leeren">
+          ✕
+        </button>
+      </div>
+
+      <div style="text-align: center; margin-bottom: 20px">
+        <button class="show-all-btn" id="show-all-btn">
           Alle Zeitzonen anzeigen
         </button>
+      </div>
 
-        <p id="status-message" class="status">
-          Tippe etwas ein oder klicke auf "Alle anzeigen".
-        </p>
-      </header>
+      <div class="status" id="status-message">
+        Tippe etwas ein oder klicke auf "Alle anzeigen".
+      </div>
+
+      <!-- ⭐ NEU: Favoriten-Sektion -->
+      <section
+        class="favorites-section"
+        id="favorites-section"
+        style="display: none"
+      >
+        <h2 class="favorites-title">⭐ Deine Favoriten</h2>
+        <div class="clocks-grid" id="favorites-container"></div>
+      </section>
+
+      <!-- normale Liste -->
+      <h2 class="section-title" id="all-title" style="display: none">
+        🌐 Alle Zeitzonen
+      </h2>
+      <div class="clocks-grid" id="clocks-container"></div>
 
       <div id="clocks-container" class="clocks-grid"></div>
     </div>
