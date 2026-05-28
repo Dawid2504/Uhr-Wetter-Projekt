@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const detailTime = document.getElementById("detail-time");
   const detailDate = document.getElementById("detail-date");
   const detailOffset = document.getElementById("detail-offset");
+  const detailStarBtn = document.getElementById("detail-star-btn");
 
   // Wetter
   const weatherTemp = document.getElementById("weather-temp");
@@ -120,17 +121,22 @@ document.addEventListener("DOMContentLoaded", () => {
   function saveFavorites() {
     localStorage.setItem(FAV_KEY, JSON.stringify([...favorites]));
   }
-  function toggleFavorite(zone, starBtn) {
+  function toggleFavorite(zone) {
     if (favorites.has(zone)) favorites.delete(zone);
     else favorites.add(zone);
     saveFavorites();
-    // Alle Stern-Buttons für diese Zone aktualisieren
+
+    // Alle kleinen Stern-Buttons auf den Karten syncen
     document
       .querySelectorAll(`.star-btn[data-zone="${CSS.escape(zone)}"]`)
       .forEach((b) => {
         b.classList.toggle("active", favorites.has(zone));
         b.textContent = favorites.has(zone) ? "★" : "☆";
       });
+
+    // Falls wir gerade diese Zone im Detail offen haben → großen Stern auch updaten
+    if (zone === activeZone) updateDetailStar();
+
     applyFilter(searchInput.value, currentShowAll);
   }
 
@@ -164,7 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (favorites.has(zone)) starBtn.classList.add("active");
     starBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      toggleFavorite(zone, starBtn);
+      toggleFavorite(zone); // ← nur noch "zone", kein "starBtn" mehr
     });
 
     const zoneName = document.createElement("div");
@@ -215,39 +221,57 @@ document.addEventListener("DOMContentLoaded", () => {
     currentShowAll = showAllIfEmpty;
     const term = query.toLowerCase().trim();
 
-    // 1) container leeren (Karten bleiben im DOM, werden nur verschoben)
+    // Container leeren (Karten bleiben im DOM, werden nur verschoben)
     container.innerHTML = "";
     favContainer.innerHTML = "";
 
-    let matches = [];
-    allZones.forEach((zone) => {
-      const item = zoneCards[zone];
-      const isMatch =
-        term === "" ? showAllIfEmpty : item.card.dataset.search.includes(term);
-      if (isMatch) matches.push(item);
-    });
+    /* ---------- 1) STARTSEITE: nur Favoriten ---------- */
+    if (term === "" && !showAllIfEmpty) {
+      if (favorites.size > 0) {
+        favSection.style.display = "block";
+        allTitle.style.display = "none";
 
-    // 2) Favoriten unter den Treffern nach oben
+        allZones.forEach((zone) => {
+          const item = zoneCards[zone];
+          if (favorites.has(zone)) {
+            favContainer.appendChild(item.card);
+            item.card.style.display = "";
+          } else {
+            item.card.style.display = "none";
+          }
+        });
+
+        statusMessage.textContent = `⭐ ${favorites.size} Favorit${favorites.size === 1 ? "" : "en"} – suche nach mehr oder klicke "Alle anzeigen".`;
+      } else {
+        favSection.style.display = "none";
+        allTitle.style.display = "none";
+        // Alle Karten ausblenden
+        allZones.forEach((z) => {
+          zoneCards[z].card.style.display = "none";
+        });
+        statusMessage.textContent =
+          'Tippe etwas ein oder klicke auf "Alle anzeigen".';
+      }
+      updateClocks();
+      return;
+    }
+
+    /* ---------- 2) SUCHE oder "ALLE ANZEIGEN" ---------- */
+    const matches = allZones
+      .map((zone) => zoneCards[zone])
+      .filter((item) =>
+        term === "" ? showAllIfEmpty : item.card.dataset.search.includes(term),
+      );
+
     const favMatches = matches.filter((m) => favorites.has(m.zone));
     const restMatches = matches.filter((m) => !favorites.has(m.zone));
 
-    // 3) Favoriten-Sektion nur zeigen, wenn leer + Favoriten existieren
-    if (term === "" && !showAllIfEmpty && favorites.size > 0) {
-      favSection.style.display = "block";
+    favSection.style.display = "none";
+
+    if (matches.length === 0) {
       allTitle.style.display = "none";
-      favMatches.forEach((m) => favContainer.appendChild(m.card));
-      favMatches.forEach((m) => (m.card.style.display = ""));
-      restMatches.forEach((m) => (m.card.style.display = "none"));
-      statusMessage.textContent = `⭐ ${favMatches.length} Favorit${favMatches.length === 1 ? "" : "en"} – suche nach mehr oder klicke "Alle anzeigen".`;
-    } else if (matches.length === 0) {
-      favSection.style.display = "none";
-      allTitle.style.display = "none";
-      statusMessage.textContent = term
-        ? `Keine Zeitzonen für "${query}" gefunden.`
-        : 'Tippe etwas ein oder klicke auf "Alle anzeigen".';
+      statusMessage.textContent = `Keine Zeitzonen für "${query}" gefunden.`;
     } else {
-      // Bei Suche / "Alle anzeigen": alles in einer Liste, Favoriten zuerst
-      favSection.style.display = "none";
       allTitle.style.display = term === "" && showAllIfEmpty ? "block" : "none";
       [...favMatches, ...restMatches].forEach((m) => {
         container.appendChild(m.card);
@@ -257,6 +281,13 @@ document.addEventListener("DOMContentLoaded", () => {
         ? `${matches.length} Zeitzonen gefunden${favMatches.length ? ` (davon ⭐ ${favMatches.length})` : ""}:`
         : `Alle ${matches.length} Zeitzonen:`;
     }
+
+    // Nicht sichtbare Karten explizit ausblenden
+    allZones.forEach((zone) => {
+      const item = zoneCards[zone];
+      if (!matches.includes(item)) item.card.style.display = "none";
+    });
+
     updateClocks();
   }
 
@@ -390,15 +421,30 @@ document.addEventListener("DOMContentLoaded", () => {
     overlay.classList.add("active");
     overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
+    updateDetailStar(); // ← NEU
     updateClocks();
     getWeatherForZone(zone);
   }
+
   function closeDetail() {
     overlay.classList.remove("active");
     overlay.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
     activeZone = null;
   }
+  function updateDetailStar() {
+    if (!activeZone) return;
+    const isFav = favorites.has(activeZone);
+    detailStarBtn.classList.toggle("active", isFav);
+    detailStarBtn.textContent = isFav ? "★" : "☆";
+  }
+
+  detailStarBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (activeZone) {
+      toggleFavorite(activeZone);
+    }
+  });
   detailClose.addEventListener("click", (e) => {
     e.stopPropagation();
     closeDetail();
