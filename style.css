@@ -311,12 +311,14 @@ header p {
   width: 100%;
   max-width: 850px;
   margin-top: 15px;
+  overflow: visible; /* 🔑 Wichtig: Verhindert Abschneiden durch Parent */
 }
 .forecast-scroll {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding-bottom: 10px;
+  overflow-y: visible; /* 🔑 Erlaubt Raum nach oben/unten für Hover */
+  padding: 12px 6px 14px; /* ⬆️ Oben Extra-Padding für den "Abhebe"-Effekt */
   scrollbar-width: thin;
   scrollbar-color: var(--accent) transparent;
   scroll-snap-type: x mandatory;
@@ -340,13 +342,17 @@ header p {
   align-items: center;
   gap: 6px;
   scroll-snap-align: start;
+  position: relative; /* 🔑 Basis für z-index & Transform */
   transition:
-    transform 0.2s,
-    border-color 0.2s;
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .forecast-day:hover {
-  transform: translateY(-3px);
+  transform: translateY(-5px);
   border-color: var(--accent);
+  z-index: 10; /* 🔑 Hebt die Karte sauber über alle Nachbarn */
+  box-shadow: 0 8px 20px rgba(0, 255, 153, 0.15); /* Verstärkt den 3D-Look */
 }
 .forecast-day-name {
   font-size: 0.85rem;
@@ -366,15 +372,11 @@ header p {
   margin-left: 2px;
 }
 @media (max-width: 600px) {
-  .weather-icon {
-    font-size: 2.2rem;
-    margin-right: 8px;
-  }
   .forecast-day {
     flex: 0 0 75px;
     padding: 10px 6px;
   }
-  .forecast-icon {
-    font-size: 1.4rem;
+  .forecast-scroll {
+    padding: 10px 4px 12px;
   }
 }
