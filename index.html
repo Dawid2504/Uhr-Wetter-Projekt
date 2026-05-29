@@ -11,34 +11,19 @@
       <header>
         <h1>🌍 Weltinfos</h1>
         <p>Alle Zeitzonen der Welt und Wetterinfos auf einen Blick!</p>
+        <div class="search-wrapper">
+          <input type="text" id="search-input" placeholder="Stadt suchen..." />
+          <button class="clear-btn" id="clear-btn">✕</button>
+        </div>
         <div class="sync-status" id="sync-status">
           ⏳ Zeit wird synchronisiert...
         </div>
       </header>
 
-      <div class="search-wrapper">
-        <input
-          type="text"
-          id="search-input"
-          placeholder="Stadt oder Region suchen..."
-          autocomplete="off"
-        />
-        <button class="clear-btn" id="clear-btn" aria-label="Suche leeren">
-          ✕
-        </button>
-      </div>
-
-      <div style="text-align: center; margin-bottom: 20px">
-        <button class="show-all-btn" id="show-all-btn">
-          Alle Zeitzonen anzeigen
-        </button>
-      </div>
-
       <div class="status" id="status-message">
-        Tippe etwas ein oder klicke auf "Alle anzeigen".
+        Tippe etwas ein, um eine Stadt zu suchen.
       </div>
 
-      <!-- ⭐ NEU: Favoriten-Sektion -->
       <section
         class="favorites-section"
         id="favorites-section"
@@ -48,73 +33,42 @@
         <div class="clocks-grid" id="favorites-container"></div>
       </section>
 
-      <!-- normale Liste -->
       <h2 class="section-title" id="all-title" style="display: none">
         🌐 Alle Zeitzonen
       </h2>
       <div class="clocks-grid" id="clocks-container"></div>
-
-      <div id="clocks-container" class="clocks-grid"></div>
     </div>
 
-    <!-- ===== VOLLBILD-DETAILANSICHT ===== -->
-    <div id="detail-overlay" class="detail-overlay" aria-hidden="true">
-      <button id="detail-close" class="detail-close" aria-label="Zurück">
-        ← Zurück
-      </button>
-      <button
-        class="detail-star-btn"
-        id="detail-star-btn"
-        aria-label="Als Favorit markieren"
-      >
-        ☆
-      </button>
+    <!-- Detail-Overlay -->
+    <div class="detail-overlay" id="detail-overlay" aria-hidden="true">
+      <button class="detail-close" id="detail-close">← Zurück</button>
+      <button class="detail-star-btn" id="detail-star-btn">☆</button>
       <div class="detail-content">
-        <div id="detail-zone" class="detail-zone">—</div>
-        <div id="detail-time" class="detail-time">--:--:--</div>
-        <div id="detail-date" class="detail-date">…</div>
-        <div class="detail-weather" id="detail-weather">
-          <div class="weather-loading" id="weather-loading">
-            🌤️ Wetter wird geladen...
-          </div>
+        <div class="detail-zone" id="detail-zone">—</div>
+        <div class="detail-time" id="detail-time">--:--:--</div>
+        <div class="detail-date" id="detail-date">...</div>
+        <div class="detail-offset" id="detail-offset"></div>
 
+        <div class="detail-weather">
           <div class="weather-info" id="weather-info" style="display: none">
             <span class="weather-icon" id="weather-icon"></span>
             <span class="weather-temp" id="weather-temp">--°C</span>
             <span class="weather-desc" id="weather-desc">--</span>
           </div>
-
-          <div
-            class="weather-error"
-            id="weather-error"
-            style="display: none; color: #ff6b6b"
-          >
+          <div class="weather-loading" id="weather-loading">
+            🌤️ Wetter wird geladen...
+          </div>
+          <div class="weather-error" id="weather-error" style="display: none">
             Wetter für diese Zone nicht verfügbar
           </div>
         </div>
 
-        <!-- 7-TAGE-VORSCHAU -->
-        <div
-          class="forecast-container"
-          id="forecast-container"
-          style="display: none"
-        >
-          <h3
-            style="
-              color: var(--text-secondary);
-              margin: 20px 0 12px;
-              font-size: 1rem;
-              letter-spacing: 1px;
-            "
-          >
-            📅 7-Tage-Vorschau
-          </h3>
+        <div id="forecast-container" style="display: none">
+          <h3 class="section-title">📅 7-Tage-Vorschau</h3>
           <div class="forecast-scroll" id="forecast-scroll"></div>
         </div>
-        <div id="detail-offset" class="detail-offset"></div>
       </div>
     </div>
-    <!-- ===== ENDE VOLLBILD-DETAILANSICHT ===== -->
 
     <script src="script.js"></script>
   </body>
