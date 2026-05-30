@@ -141,12 +141,13 @@ header p {
   text-overflow: ellipsis;
 }
 .time {
-  font-size: 2.2rem;
-  font-weight: bold;
+  font-size: 1.1rem; /* ⬅️ kleiner */
+  font-weight: 500;
   font-family: "Courier New", Courier, monospace;
-  color: var(--accent);
-  text-shadow: 0 0 10px var(--accent-glow);
-  margin: 8px 0;
+  color: var(--text-secondary); /* ⬅️ grau statt Neon-Grün */
+  text-shadow: none;
+  margin: 4px 0 12px;
+  opacity: 0.7;
 }
 .date {
   font-size: 0.95rem;
@@ -761,4 +762,90 @@ header p {
   .welcome-clock-time {
     font-size: 2rem;
   }
+}
+/* ===== STÜNDLICHER VERLAUF ===== */
+.hourly-container {
+  width: 100%;
+  max-width: 850px;
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  animation: fadeInUp 0.3s ease;
+}
+.hourly-title {
+  font-size: 0.9rem;
+  color: var(--accent);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin: 0 0 15px;
+  text-align: center;
+}
+.hourly-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) transparent;
+}
+.hourly-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.hourly-scroll::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 3px;
+}
+.hourly-item {
+  flex: 0 0 65px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+.hourly-item:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+}
+.hourly-item.current {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+.hourly-hour {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.hourly-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.hourly-temp {
+  font-size: 0.95rem;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+/* Klickbarer Tages-Pfeil */
+.forecast-day {
+  cursor: pointer;
+}
+.forecast-day.selected {
+  border-color: var(--accent);
+  background: rgba(0, 255, 153, 0.08);
+}
+
+/* Wetter-Details prominenter machen */
+.weather-temp {
+  font-size: 4rem; /* ⬅️ größer */
+}
+.weather-desc {
+  font-size: 1.3rem; /* ⬅️ größer */
 }

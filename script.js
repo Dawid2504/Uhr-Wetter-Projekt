@@ -25,7 +25,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const utcTime = document.getElementById("utc-time");
   const utcDate = document.getElementById("utc-date");
   const quickCities = document.getElementById("quick-cities");
-  const forecastScroll = document.getElementById("forecast-scroll");
+  const hourlyContainer = document.getElementById("hourly-container");
+  const hourlyScroll = document.getElementById("hourly-scroll");
+  const hourlyTitle = document.getElementById("hourly-title");
 
   const searchCache = new Set();
   let timeOffset = 0;
@@ -643,6 +645,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const weatherCache = {};
+  const hourlyCache = {};
 
   async function getWeatherForCity(city) {
     weatherLoading.style.display = "block";
@@ -652,7 +655,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (weatherCache[city.id]) {
       updateWeatherUI(weatherCache[city.id]);
-      renderForecast(weatherCache[city.id].forecast);
+      renderForecast(weatherCache[city.id].forecast, city.id);
       return;
     }
 
@@ -662,27 +665,32 @@ document.addEventListener("DOMContentLoaded", () => {
         city.lat +
         "&longitude=" +
         city.lon +
-        "&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto";
+        "&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min" +
+        "&hourly=temperature_2m,weathercode,windspeed_10m" +
+        "&timezone=auto";
       const weatherRes = await fetch(weatherUrl);
       const weatherData = await weatherRes.json();
       const current = weatherData.current_weather;
       const daily = weatherData.daily;
 
+      const hourly = weatherData.hourly;
       const weather = {
         temp: Math.round(current.temperature),
         desc: WMO_CODES[current.weathercode] || "Unbekannt",
         icon: WMO_ICONS[current.weathercode] || "🌡️",
         location: city.name,
         forecast: daily.time.slice(0, 7).map((date, i) => ({
+          date: date, // ⬅️ NEU: Datum speichern für Klick-Abgleich
           day: new Date(date).toLocaleDateString("de-DE", { weekday: "short" }),
           icon: WMO_ICONS[daily.weathercode[i]] || "🌡️",
           max: Math.round(daily.temperature_2m_max[i]),
           min: Math.round(daily.temperature_2m_min[i]),
         })),
+        hourly: hourly, // ⬅️ NEU: stündliche Daten speichern
       };
       weatherCache[city.id] = weather;
       updateWeatherUI(weather);
-      renderForecast(weather.forecast);
+      renderForecast(weather.forecast, city.id);
     } catch (error) {
       console.warn("Wetter für " + city.name + " fehlgeschlagen:", error);
       weatherLoading.style.display = "none";
@@ -698,21 +706,30 @@ document.addEventListener("DOMContentLoaded", () => {
     weatherDesc.textContent = w.desc + " (" + w.location + ")";
   }
 
-  function renderForecast(forecast) {
+  function renderForecast(forecast, cityId) {
     forecastScroll.innerHTML = "";
-    forecast.forEach((day) => {
+    forecast.forEach((day, index) => {
       const el = document.createElement("div");
       el.className = "forecast-day";
+      el.dataset.date = day.date;
       el.innerHTML =
         '<div class="forecast-day-name">' +
         day.day +
-        '</div><div class="forecast-icon">' +
+        "</div>" +
+        '<div class="forecast-icon">' +
         day.icon +
-        '</div><div class="forecast-temps"><span>' +
+        "</div>" +
+        '<div class="forecast-temps"><span>' +
         day.max +
-        "°</span><span>/ " +
+        "°</span><span>/" +
         day.min +
         "°</span></div>";
+
+      // ⬇️ Klick-Event: zeigt stündlichen Verlauf
+      el.addEventListener("click", () => {
+        showHourlyForecast(cityId, day, el);
+      });
+
       forecastScroll.appendChild(el);
     });
     forecastContainer.style.display = "block";
@@ -795,6 +812,7 @@ document.addEventListener("DOMContentLoaded", () => {
     overlay.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
     activeCity = null;
+    hourlyContainer.style.display = "none"; // ⬅️ NEU
   }
 
   function updateDetailStar() {
@@ -857,5 +875,67 @@ document.addEventListener("DOMContentLoaded", () => {
 
   applyFilter("");
   buildQuickAccess();
+  function showHourlyForecast(cityId, day, clickedElement) {
+    // Markiere ausgewählten Tag
+    document
+      .querySelectorAll(".forecast-day")
+      .forEach((el) => el.classList.remove("selected"));
+    clickedElement.classList.add("selected");
+
+    const weather = weatherCache[cityId];
+    if (!weather || !weather.hourly) {
+      hourlyContainer.style.display = "none";
+      return;
+    }
+
+    const hourly = weather.hourly;
+    const targetDate = day.date; // z.B. "2026-05-31"
+
+    hourlyTitle.textContent =
+      "⏱️ Stündlicher Verlauf – " +
+      day.day +
+      ", " +
+      new Date(targetDate).toLocaleDateString("de-DE", {
+        day: "2-digit",
+        month: "long",
+      });
+
+    hourlyScroll.innerHTML = "";
+    const nowHour = new Date().getHours();
+
+    for (let i = 0; i < hourly.time.length; i++) {
+      const timeStr = hourly.time[i]; // "2026-05-31T14:00"
+      if (timeStr.startsWith(targetDate)) {
+        const hour = parseInt(timeStr.split("T")[1].split(":")[0]);
+        const temp = Math.round(hourly.temperature_2m[i]);
+        const wCode = hourly.weathercode[i];
+        const icon = WMO_ICONS[wCode] || "🌡️";
+
+        const el = document.createElement("div");
+        el.className = "hourly-item";
+        // Markiere die aktuelle Stunde
+        if (
+          targetDate === new Date().toISOString().split("T")[0] &&
+          hour === nowHour
+        ) {
+          el.classList.add("current");
+        }
+        el.innerHTML =
+          '<div class="hourly-hour">' +
+          String(hour).padStart(2, "0") +
+          ":00</div>" +
+          '<div class="hourly-icon">' +
+          icon +
+          "</div>" +
+          '<div class="hourly-temp">' +
+          temp +
+          "°</div>";
+        hourlyScroll.appendChild(el);
+      }
+    }
+
+    hourlyContainer.style.display = "block";
+    hourlyContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
   setInterval(updateClocks, 1000);
 });
