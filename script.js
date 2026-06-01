@@ -1002,6 +1002,10 @@ document.addEventListener("DOMContentLoaded", () => {
   searchInput.addEventListener("input", (e) => {
     clearBtn.classList.toggle("visible", e.target.value.length > 0);
     applyFilter(e.target.value);
+    // 🔧 FIX: Verhindert, dass die Suchleiste nach jedem Tastendruck den Fokus verliert
+    setTimeout(() => {
+      if (document.activeElement !== searchInput) searchInput.focus();
+    }, 0);
   });
 
   searchInput.addEventListener("keydown", (e) => {
