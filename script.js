@@ -21,13 +21,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const weatherError = document.getElementById("weather-error");
   const weatherIcon = document.getElementById("weather-icon");
   const forecastContainer = document.getElementById("forecast-container");
+  const forecastScroll = document.getElementById("forecast-scroll");
   const welcomeHero = document.getElementById("welcome-hero");
-  const utcTime = document.getElementById("utc-time");
-  const utcDate = document.getElementById("utc-date");
   const quickCities = document.getElementById("quick-cities");
   const hourlyContainer = document.getElementById("hourly-container");
   const hourlyScroll = document.getElementById("hourly-scroll");
   const hourlyTitle = document.getElementById("hourly-title");
+  const statSunny = document.getElementById("stat-sunny");
+  const statRain = document.getElementById("stat-rain");
+  const statCloudy = document.getElementById("stat-cloudy");
 
   const searchCache = new Set();
   let timeOffset = 0;
@@ -81,23 +83,20 @@ document.addEventListener("DOMContentLoaded", () => {
     99: "Schweres Gewitter",
   };
 
+  // Zeit synchronisieren
   async function syncTime() {
-    const startLocal = Date.now();
     try {
       const res = await fetch(
         "https://timeapi.io/api/time/current/zone?timeZone=UTC",
         { cache: "no-store" },
       );
       const data = await res.json();
-      const endLocal = Date.now();
-      const latency = (endLocal - startLocal) / 2;
       const serverTime = new Date(data.dateTime + "Z").getTime();
-      timeOffset = serverTime - endLocal + latency;
-      syncStatus.textContent =
-        "✅ Zeit synchronisiert (±" + Math.round(latency) + " ms)";
+      timeOffset = serverTime - Date.now();
+      syncStatus.textContent = "✅ Zeit synchronisiert";
       syncStatus.classList.add("ok");
     } catch (err) {
-      syncStatus.textContent = "⚠️ Offline-Modus (lokale Zeit)";
+      syncStatus.textContent = "⚠️ Offline-Modus";
       syncStatus.classList.add("error");
     }
   }
@@ -109,6 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
   syncTime();
   setInterval(syncTime, 60 * 60 * 1000);
 
+  // Stadt-Datenbank
   const cityDatabase = [
     {
       id: "berlin",
@@ -423,7 +423,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const cityCards = {};
   let activeCity = null;
+  const weatherCache = {};
 
+  // Stadt-Karte erstellen MIT WETTER
   function buildCard(city) {
     const card = document.createElement("div");
     card.className = "clock-card";
@@ -431,10 +433,10 @@ document.addEventListener("DOMContentLoaded", () => {
     card.dataset.search = (city.name + " " + city.country).toLowerCase();
     card.dataset.cityId = city.id;
 
+    // Favoriten-Stern
     const starBtn = document.createElement("button");
     starBtn.className = "star-btn";
     starBtn.dataset.cityId = city.id;
-    starBtn.setAttribute("aria-label", "Als Favorit markieren");
     starBtn.textContent = favorites.has(city.id) ? "★" : "☆";
     if (favorites.has(city.id)) starBtn.classList.add("active");
     starBtn.addEventListener("click", (e) => {
@@ -442,24 +444,45 @@ document.addEventListener("DOMContentLoaded", () => {
       toggleFavorite(city.id);
     });
 
+    // Stadtname
     const zoneName = document.createElement("div");
     zoneName.className = "zone-name";
-    zoneName.innerHTML =
-      '<span class="city-flag">' + city.country + "</span> " + city.name;
-    zoneName.title = city.timezone;
+    zoneName.innerHTML = `<span class="city-flag">${city.country}</span>${city.name}`;
 
+    // Uhrzeit (klein)
     const timeEl = document.createElement("div");
     timeEl.className = "time";
     timeEl.textContent = "--:--:--";
 
+    // Datum
     const dateEl = document.createElement("div");
     dateEl.className = "date";
     dateEl.textContent = "...";
 
-    card.append(starBtn, zoneName, timeEl, dateEl);
+    // Wetter-Bereich
+    const weatherEl = document.createElement("div");
+    weatherEl.className = "card-weather";
+    weatherEl.innerHTML = `
+            <div class="card-weather-icon">🌡️</div>
+            <div class="card-weather-info">
+                <div class="card-weather-temp">--°C</div>
+                <div class="card-weather-desc">Lädt...</div>
+            </div>
+        `;
+
+    // Mini-Forecast (3 Tage)
+    const forecastEl = document.createElement("div");
+    forecastEl.className = "card-forecast";
+    forecastEl.innerHTML = `
+            <div class="card-forecast-day"><div class="card-forecast-name">---</div><div class="card-forecast-icon">🌡️</div><div class="card-forecast-temp">--°</div></div>
+            <div class="card-forecast-day"><div class="card-forecast-name">---</div><div class="card-forecast-icon">🌡️</div><div class="card-forecast-temp">--°</div></div>
+            <div class="card-forecast-day"><div class="card-forecast-name">---</div><div class="card-forecast-icon">🌡️</div><div class="card-forecast-temp">--°</div></div>
+        `;
+
+    card.append(starBtn, zoneName, timeEl, dateEl, weatherEl, forecastEl);
     card.addEventListener("click", () => openDetail(city));
 
-    return { city, card, timeEl, dateEl, starBtn };
+    return { city, card, timeEl, dateEl, starBtn, weatherEl, forecastEl };
   }
 
   cityDatabase.forEach((city) => {
@@ -476,13 +499,9 @@ document.addEventListener("DOMContentLoaded", () => {
     second: "2-digit",
     hour12: false,
   };
+  const dateOptions = { weekday: "short", day: "2-digit", month: "2-digit" };
 
-  const dateOptions = {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  };
+  // Schnellzugriff
   function buildQuickAccess() {
     const popularCities = [
       "berlin",
@@ -493,18 +512,121 @@ document.addEventListener("DOMContentLoaded", () => {
       "dubai",
     ];
     quickCities.innerHTML = "";
-
     popularCities.forEach((cityId) => {
       const city = cityCards[cityId];
       if (city) {
         const btn = document.createElement("button");
         btn.className = "quick-city-btn";
-        btn.innerHTML = city.city.country + " " + city.city.name;
+        btn.textContent = city.city.country + " " + city.city.name;
         btn.addEventListener("click", () => openDetail(city.city));
         quickCities.appendChild(btn);
       }
     });
   }
+
+  // Wetter für Karte laden
+  async function loadCardWeather(city) {
+    const cardData = cityCards[city.id];
+    if (!cardData) return;
+
+    if (weatherCache[city.id]) {
+      updateCardWeatherUI(city.id, weatherCache[city.id]);
+      return;
+    }
+
+    try {
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
+      const weatherRes = await fetch(weatherUrl);
+      const weatherData = await weatherRes.json();
+      const current = weatherData.current_weather;
+      const daily = weatherData.daily;
+
+      const weather = {
+        temp: Math.round(current.temperature),
+        desc: WMO_CODES[current.weathercode] || "Unbekannt",
+        icon: WMO_ICONS[current.weathercode] || "🌡️",
+        forecast: daily.time.slice(0, 3).map((date, i) => ({
+          date: date,
+          day: new Date(date).toLocaleDateString("de-DE", { weekday: "short" }),
+          icon: WMO_ICONS[daily.weathercode[i]] || "🌡️",
+          max: Math.round(daily.temperature_2m_max[i]),
+          min: Math.round(daily.temperature_2m_min[i]),
+        })),
+        fullForecast: {
+          time: daily.time,
+          weathercode: daily.weathercode,
+          max: daily.temperature_2m_max,
+          min: daily.temperature_2m_min,
+        },
+        hourly: weatherData.hourly,
+      };
+
+      weatherCache[city.id] = weather;
+      updateCardWeatherUI(city.id, weather);
+      updateWeatherStats();
+    } catch (error) {
+      console.warn("Wetter für " + city.name + " fehlgeschlagen:", error);
+    }
+  }
+
+  function updateCardWeatherUI(cityId, weather) {
+    const cardData = cityCards[cityId];
+    if (!cardData) return;
+
+    // Aktuelles Wetter
+    cardData.weatherEl.innerHTML = `
+            <div class="card-weather-icon">${weather.icon}</div>
+            <div class="card-weather-info">
+                <div class="card-weather-temp">${weather.temp}°C</div>
+                <div class="card-weather-desc">${weather.desc}</div>
+            </div>
+        `;
+
+    // 3-Tage-Forecast
+    cardData.forecastEl.innerHTML = weather.forecast
+      .map(
+        (day) => `
+            <div class="card-forecast-day">
+                <div class="card-forecast-name">${day.day}</div>
+                <div class="card-forecast-icon">${day.icon}</div>
+                <div class="card-forecast-temp">${day.max}°<span>/${day.min}°</span></div>
+            </div>
+        `,
+      )
+      .join("");
+  }
+
+  // Wetter-Statistiken im Hero aktualisieren
+  function updateWeatherStats() {
+    let sunny = 0,
+      rain = 0,
+      cloudy = 0;
+    const sunnyCodes = [0, 1];
+    const rainCodes = [51, 53, 55, 61, 63, 65, 80, 81, 82, 95, 96, 99];
+    const cloudyCodes = [2, 3, 45, 48];
+
+    Object.values(weatherCache).forEach((w) => {
+      const code = parseInt(w.icon.replace(/[^0-9]/g, ""));
+      if (sunnyCodes.includes(code)) sunny++;
+      else if (rainCodes.includes(code)) rain++;
+      else if (cloudyCodes.includes(code)) cloudy++;
+    });
+
+    if (statSunny) statSunny.textContent = sunny;
+    if (statRain) statRain.textContent = rain;
+    if (statCloudy) statCloudy.textContent = cloudy;
+  }
+
+  // Alle sichtbaren Karten-Wetter laden
+  function loadAllVisibleWeather() {
+    Object.values(cityCards).forEach((item) => {
+      if (item.card.style.display !== "none") {
+        loadCardWeather(item.city);
+      }
+    });
+  }
+
+  // Filter anwenden
   function applyFilter(query, skipAPISearch = false) {
     const term = query.toLowerCase().trim();
     container.innerHTML = "";
@@ -523,28 +645,24 @@ document.addEventListener("DOMContentLoaded", () => {
             item.card.style.display = "none";
           }
         });
-        statusMessage.textContent =
-          "⭐ " +
-          favorites.size +
-          " Favorit" +
-          (favorites.size === 1 ? "" : "en") +
-          " – suche nach mehr.";
+        statusMessage.innerHTML = `⭐ ${favorites.size} Favorit${favorites.size === 1 ? "" : "en"} – suche nach mehr.`;
       } else {
         favSection.style.display = "none";
         if (allTitle) allTitle.style.display = "none";
         Object.values(cityCards).forEach(
           (item) => (item.card.style.display = "none"),
         );
-        statusMessage.textContent = "Tippe etwas ein, um eine Stadt zu suchen.";
+        statusMessage.innerHTML = `<span class="sync-status">Tippe etwas ein, um eine Stadt zu suchen.</span>`;
       }
       updateClocks();
+      setTimeout(loadAllVisibleWeather, 500);
       return;
     }
+
     welcomeHero.classList.add("hidden");
     const matches = Object.values(cityCards).filter((item) =>
       item.card.dataset.search.includes(term),
     );
-
     const favMatches = matches.filter((m) => favorites.has(m.city.id));
     const restMatches = matches.filter((m) => !favorites.has(m.city.id));
 
@@ -555,16 +673,12 @@ document.addEventListener("DOMContentLoaded", () => {
       statusMessage.textContent =
         "Keine Städte lokal gefunden. Suche weltweit...";
     } else {
-      if (allTitle) allTitle.style.display = "none";
+      if (allTitle) allTitle.style.display = "block";
       [...favMatches, ...restMatches].forEach((m) => {
         container.appendChild(m.card);
         m.card.style.display = "";
       });
-      statusMessage.textContent =
-        matches.length +
-        " Städte gefunden" +
-        (favMatches.length ? " (davon ⭐ " + favMatches.length + ")" : "") +
-        ":";
+      statusMessage.textContent = `${matches.length} Städte gefunden${favMatches.length ? ` (davon ⭐ ${favMatches.length})` : ""}:`;
     }
 
     Object.values(cityCards).forEach((item) => {
@@ -572,6 +686,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     updateClocks();
+    setTimeout(loadAllVisibleWeather, 500);
 
     if (!skipAPISearch && term.length >= 2 && !searchCache.has(term)) {
       clearTimeout(searchTimeout);
@@ -579,15 +694,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // API-Suche
   async function searchCityAPI(query) {
     if (searchCache.has(query)) return;
     searchCache.add(query);
+
     try {
       statusMessage.textContent = "🔍 Suche '" + query + "' weltweit...";
       const res = await fetch(
-        "https://geocoding-api.open-meteo.com/v1/search?name=" +
-          encodeURIComponent(query) +
-          "&count=5&language=de&format=json",
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=de&format=json`,
       );
       const data = await res.json();
 
@@ -616,18 +731,11 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         applyFilter(query, true);
-
         if (newCitiesAdded > 0) {
-          statusMessage.textContent =
-            "✅ " +
-            newCitiesAdded +
-            " neue Stadt" +
-            (newCitiesAdded === 1 ? "" : "e") +
-            " weltweit gefunden!";
+          statusMessage.textContent = `✅ ${newCitiesAdded} neue Stadt${newCitiesAdded === 1 ? "" : "e"} weltweit gefunden!`;
         }
       } else {
-        statusMessage.textContent =
-          "Keine Städte weltweit für '" + query + "' gefunden.";
+        statusMessage.textContent = `Keine Städte weltweit für '${query}' gefunden.`;
       }
     } catch (error) {
       console.warn("API-Suche fehlgeschlagen:", error);
@@ -644,97 +752,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return String.fromCodePoint(...codePoints);
   }
 
-  const weatherCache = {};
-  const hourlyCache = {};
-
-  async function getWeatherForCity(city) {
-    weatherLoading.style.display = "block";
-    weatherInfo.style.display = "none";
-    weatherError.style.display = "none";
-    forecastContainer.style.display = "none";
-
-    if (weatherCache[city.id]) {
-      updateWeatherUI(weatherCache[city.id]);
-      renderForecast(weatherCache[city.id].forecast, city.id);
-      return;
-    }
-
-    try {
-      const weatherUrl =
-        "https://api.open-meteo.com/v1/forecast?latitude=" +
-        city.lat +
-        "&longitude=" +
-        city.lon +
-        "&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min" +
-        "&hourly=temperature_2m,weathercode,windspeed_10m" +
-        "&timezone=auto";
-      const weatherRes = await fetch(weatherUrl);
-      const weatherData = await weatherRes.json();
-      const current = weatherData.current_weather;
-      const daily = weatherData.daily;
-
-      const hourly = weatherData.hourly;
-      const weather = {
-        temp: Math.round(current.temperature),
-        desc: WMO_CODES[current.weathercode] || "Unbekannt",
-        icon: WMO_ICONS[current.weathercode] || "🌡️",
-        location: city.name,
-        forecast: daily.time.slice(0, 7).map((date, i) => ({
-          date: date, // ⬅️ NEU: Datum speichern für Klick-Abgleich
-          day: new Date(date).toLocaleDateString("de-DE", { weekday: "short" }),
-          icon: WMO_ICONS[daily.weathercode[i]] || "🌡️",
-          max: Math.round(daily.temperature_2m_max[i]),
-          min: Math.round(daily.temperature_2m_min[i]),
-        })),
-        hourly: hourly, // ⬅️ NEU: stündliche Daten speichern
-      };
-      weatherCache[city.id] = weather;
-      updateWeatherUI(weather);
-      renderForecast(weather.forecast, city.id);
-    } catch (error) {
-      console.warn("Wetter für " + city.name + " fehlgeschlagen:", error);
-      weatherLoading.style.display = "none";
-      weatherError.style.display = "block";
-    }
-  }
-
-  function updateWeatherUI(w) {
-    weatherLoading.style.display = "none";
-    weatherInfo.style.display = "flex";
-    weatherIcon.textContent = w.icon;
-    weatherTemp.textContent = w.temp + "°C";
-    weatherDesc.textContent = w.desc + " (" + w.location + ")";
-  }
-
-  function renderForecast(forecast, cityId) {
-    forecastScroll.innerHTML = "";
-    forecast.forEach((day, index) => {
-      const el = document.createElement("div");
-      el.className = "forecast-day";
-      el.dataset.date = day.date;
-      el.innerHTML =
-        '<div class="forecast-day-name">' +
-        day.day +
-        "</div>" +
-        '<div class="forecast-icon">' +
-        day.icon +
-        "</div>" +
-        '<div class="forecast-temps"><span>' +
-        day.max +
-        "°</span><span>/" +
-        day.min +
-        "°</span></div>";
-
-      // ⬇️ Klick-Event: zeigt stündlichen Verlauf
-      el.addEventListener("click", () => {
-        showHourlyForecast(cityId, day, el);
-      });
-
-      forecastScroll.appendChild(el);
-    });
-    forecastContainer.style.display = "block";
-  }
-
+  // Uhren aktualisieren
   function updateClocks() {
     const t = now();
     for (const id in cityCards) {
@@ -744,63 +762,45 @@ document.addEventListener("DOMContentLoaded", () => {
         (!activeCity || activeCity.id !== id)
       )
         continue;
+
       try {
-        item.timeEl.textContent = t.toLocaleTimeString(
-          "de-DE",
-          Object.assign({}, timeOptions, { timeZone: item.city.timezone }),
-        );
-        item.dateEl.textContent = t.toLocaleDateString(
-          "de-DE",
-          Object.assign({}, dateOptions, { timeZone: item.city.timezone }),
-        );
+        item.timeEl.textContent = t.toLocaleTimeString("de-DE", {
+          ...timeOptions,
+          timeZone: item.city.timezone,
+        });
+        item.dateEl.textContent = t.toLocaleDateString("de-DE", {
+          ...dateOptions,
+          timeZone: item.city.timezone,
+        });
       } catch (e) {
         item.timeEl.textContent = "N/A";
       }
     }
+
     if (activeCity) {
       try {
-        detailTime.textContent = t.toLocaleTimeString(
-          "de-DE",
-          Object.assign({}, timeOptions, { timeZone: activeCity.timezone }),
-        );
-        detailDate.textContent = t.toLocaleDateString(
-          "de-DE",
-          Object.assign({}, dateOptions, { timeZone: activeCity.timezone }),
-        );
-        const fmt = new Intl.DateTimeFormat("en-US", {
+        detailTime.textContent = t.toLocaleTimeString("de-DE", {
+          ...timeOptions,
           timeZone: activeCity.timezone,
-          timeZoneName: "shortOffset",
         });
-        const tzPart = fmt
-          .formatToParts(t)
-          .find((p) => p.type === "timeZoneName");
-        if (tzPart)
-          detailOffset.textContent = "UTC " + tzPart.value.replace("GMT", "");
+        detailDate.textContent = t.toLocaleDateString("de-DE", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          timeZone: activeCity.timezone,
+        });
       } catch (e) {
         detailTime.textContent = "N/A";
       }
     }
-    if (utcTime) {
-      try {
-        utcTime.textContent = t.toLocaleTimeString("de-DE", {
-          ...timeOptions,
-          timeZone: "UTC",
-        });
-        utcDate.textContent = t.toLocaleDateString("de-DE", {
-          ...dateOptions,
-          timeZone: "UTC",
-        });
-      } catch (e) {
-        utcTime.textContent = "N/A";
-      }
-    }
   }
 
+  // Detailansicht öffnen
   function openDetail(city) {
     activeCity = city;
     detailZone.textContent = city.country + " " + city.name;
     overlay.classList.add("active");
-    overlay.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
     updateDetailStar();
     updateClocks();
@@ -809,10 +809,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function closeDetail() {
     overlay.classList.remove("active");
-    overlay.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
     activeCity = null;
-    hourlyContainer.style.display = "none"; // ⬅️ NEU
+    hourlyContainer.style.display = "none";
   }
 
   function updateDetailStar() {
@@ -822,15 +821,156 @@ document.addEventListener("DOMContentLoaded", () => {
     detailStarBtn.textContent = isFav ? "★" : "☆";
   }
 
+  // Detail-Wetter laden
+  async function getWeatherForCity(city) {
+    weatherLoading.style.display = "block";
+    weatherInfo.style.display = "none";
+    weatherError.style.display = "none";
+    forecastContainer.style.display = "none";
+    hourlyContainer.style.display = "none";
+
+    if (weatherCache[city.id]) {
+      updateDetailWeatherUI(weatherCache[city.id]);
+      renderForecast(
+        weatherCache[city.id].fullForecast || weatherCache[city.id].forecast,
+        city.id,
+      );
+      return;
+    }
+
+    try {
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&hourly=temperature_2m,weathercode&timezone=auto`;
+      const weatherRes = await fetch(weatherUrl);
+      const weatherData = await weatherRes.json();
+      const current = weatherData.current_weather;
+      const daily = weatherData.daily;
+      const hourly = weatherData.hourly;
+
+      const weather = {
+        temp: Math.round(current.temperature),
+        desc: WMO_CODES[current.weathercode] || "Unbekannt",
+        icon: WMO_ICONS[current.weathercode] || "🌡️",
+        forecast: daily.time.slice(0, 3).map((date, i) => ({
+          date: date,
+          day: new Date(date).toLocaleDateString("de-DE", { weekday: "short" }),
+          icon: WMO_ICONS[daily.weathercode[i]] || "🌡️",
+          max: Math.round(daily.temperature_2m_max[i]),
+          min: Math.round(daily.temperature_2m_min[i]),
+        })),
+        fullForecast: {
+          time: daily.time.slice(0, 7),
+          weathercode: daily.weathercode.slice(0, 7),
+          max: daily.temperature_2m_max.slice(0, 7),
+          min: daily.temperature_2m_min.slice(0, 7),
+        },
+        hourly: hourly,
+      };
+
+      weatherCache[city.id] = weather;
+      updateDetailWeatherUI(weather);
+      renderForecast(weather.fullForecast, city.id);
+    } catch (error) {
+      console.warn("Wetter für " + city.name + " fehlgeschlagen:", error);
+      weatherLoading.style.display = "none";
+      weatherError.style.display = "block";
+    }
+  }
+
+  function updateDetailWeatherUI(w) {
+    weatherLoading.style.display = "none";
+    weatherInfo.style.display = "flex";
+    weatherIcon.textContent = w.icon;
+    weatherTemp.textContent = w.temp + "°C";
+    weatherDesc.textContent = w.desc;
+  }
+
+  function renderForecast(forecast, cityId) {
+    forecastScroll.innerHTML = "";
+
+    const days = forecast.time || forecast;
+    const codes =
+      forecast.weathercode ||
+      forecast.map((f) => parseInt(f.icon.replace(/[^0-9]/g, "")));
+    const maxTemps = forecast.max || forecast.map((f) => f.max);
+    const minTemps = forecast.min || forecast.map((f) => f.min);
+
+    for (let i = 0; i < days.length; i++) {
+      const date = days[i];
+      const dayName = new Date(date).toLocaleDateString("de-DE", {
+        weekday: "short",
+      });
+      const icon = WMO_ICONS[codes[i]] || "🌡️";
+      const max = Math.round(maxTemps[i]);
+      const min = Math.round(minTemps[i]);
+
+      const el = document.createElement("div");
+      el.className = "forecast-day";
+      el.dataset.date = date;
+      el.innerHTML = `
+                <div class="forecast-day-name">${dayName}</div>
+                <div class="forecast-icon">${icon}</div>
+                <div class="forecast-temps"><span>${max}°</span><span>/${min}°</span></div>
+            `;
+      el.addEventListener("click", () => showHourlyForecast(cityId, date, el));
+      forecastScroll.appendChild(el);
+    }
+    forecastContainer.style.display = "block";
+  }
+
+  function showHourlyForecast(cityId, targetDate, clickedElement) {
+    document
+      .querySelectorAll(".forecast-day")
+      .forEach((el) => el.classList.remove("selected"));
+    clickedElement.classList.add("selected");
+
+    const weather = weatherCache[cityId];
+    if (!weather || !weather.hourly) {
+      hourlyContainer.style.display = "none";
+      return;
+    }
+
+    const hourly = weather.hourly;
+    hourlyTitle.textContent = `⏱️ Stündlicher Verlauf – ${new Date(targetDate).toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" })}`;
+    hourlyScroll.innerHTML = "";
+
+    const nowHour = new Date().getHours();
+
+    for (let i = 0; i < hourly.time.length; i++) {
+      const timeStr = hourly.time[i];
+      if (timeStr.startsWith(targetDate)) {
+        const hour = parseInt(timeStr.split("T")[1].split(":")[0]);
+        const temp = Math.round(hourly.temperature_2m[i]);
+        const wCode = hourly.weathercode[i];
+        const icon = WMO_ICONS[wCode] || "🌡️";
+
+        const el = document.createElement("div");
+        el.className = "hourly-item";
+        if (
+          targetDate === new Date().toISOString().split("T")[0] &&
+          hour === nowHour
+        ) {
+          el.classList.add("current");
+        }
+        el.innerHTML = `
+                    <div class="hourly-hour">${String(hour).padStart(2, "0")}:00</div>
+                    <div class="hourly-icon">${icon}</div>
+                    <div class="hourly-temp">${temp}°</div>
+                `;
+        hourlyScroll.appendChild(el);
+      }
+    }
+
+    hourlyContainer.style.display = "block";
+    hourlyContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  // Event-Listener
   detailStarBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     if (activeCity) toggleFavorite(activeCity.id);
   });
 
-  detailClose.addEventListener("click", (e) => {
-    e.stopPropagation();
-    closeDetail();
-  });
+  detailClose.addEventListener("click", closeDetail);
 
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) closeDetail();
@@ -864,78 +1004,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   clearBtn.addEventListener("click", clearSearch);
 
-  document.addEventListener("click", (e) => {
-    if (
-      !e.target.closest(".search-wrapper") &&
-      !e.target.closest(".detail-overlay")
-    ) {
-      searchInput.blur();
-    }
-  });
-
+  // Start
   applyFilter("");
   buildQuickAccess();
-  function showHourlyForecast(cityId, day, clickedElement) {
-    // Markiere ausgewählten Tag
-    document
-      .querySelectorAll(".forecast-day")
-      .forEach((el) => el.classList.remove("selected"));
-    clickedElement.classList.add("selected");
-
-    const weather = weatherCache[cityId];
-    if (!weather || !weather.hourly) {
-      hourlyContainer.style.display = "none";
-      return;
-    }
-
-    const hourly = weather.hourly;
-    const targetDate = day.date; // z.B. "2026-05-31"
-
-    hourlyTitle.textContent =
-      "⏱️ Stündlicher Verlauf – " +
-      day.day +
-      ", " +
-      new Date(targetDate).toLocaleDateString("de-DE", {
-        day: "2-digit",
-        month: "long",
-      });
-
-    hourlyScroll.innerHTML = "";
-    const nowHour = new Date().getHours();
-
-    for (let i = 0; i < hourly.time.length; i++) {
-      const timeStr = hourly.time[i]; // "2026-05-31T14:00"
-      if (timeStr.startsWith(targetDate)) {
-        const hour = parseInt(timeStr.split("T")[1].split(":")[0]);
-        const temp = Math.round(hourly.temperature_2m[i]);
-        const wCode = hourly.weathercode[i];
-        const icon = WMO_ICONS[wCode] || "🌡️";
-
-        const el = document.createElement("div");
-        el.className = "hourly-item";
-        // Markiere die aktuelle Stunde
-        if (
-          targetDate === new Date().toISOString().split("T")[0] &&
-          hour === nowHour
-        ) {
-          el.classList.add("current");
-        }
-        el.innerHTML =
-          '<div class="hourly-hour">' +
-          String(hour).padStart(2, "0") +
-          ":00</div>" +
-          '<div class="hourly-icon">' +
-          icon +
-          "</div>" +
-          '<div class="hourly-temp">' +
-          temp +
-          "°</div>";
-        hourlyScroll.appendChild(el);
-      }
-    }
-
-    hourlyContainer.style.display = "block";
-    hourlyContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }
   setInterval(updateClocks, 1000);
 });
