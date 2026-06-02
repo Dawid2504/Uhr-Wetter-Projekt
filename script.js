@@ -91,12 +91,12 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const WEATHER_BACKGROUNDS = {
-    clear: "bg-clear.png",
-    cloudy: "bg-cloudy.png",
-    fog: "bg-fog.png",
-    rain: "bg-rain.png",
-    snow: "bg-snow.png",
-    thunder: "bg-thunder.png",
+    clear: "images/bg-clear.png",
+    cloudy: "images/bg-cloudy.png",
+    fog: "images/bg-fog.png",
+    rain: "images/bg-rain.png",
+    snow: "images/bg-snow.png",
+    thunder: "images/bg-thunder.png",
   };
 
   function getWeatherBackground(code) {

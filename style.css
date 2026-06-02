@@ -287,7 +287,7 @@ header p {
   transition:
     opacity 0.4s ease,
     max-height 0.4s ease;
-  background-image: url("hintergrund.jpg");
+  background-image: url("images/hintergrund.jpg");
   background-size: cover;
   background-position: center;
 }
