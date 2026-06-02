@@ -90,6 +90,35 @@ document.addEventListener("DOMContentLoaded", () => {
     99: "Schweres Gewitter",
   };
 
+  const WEATHER_BACKGROUNDS = {
+    clear: "bg-clear.png",
+    cloudy: "bg-cloudy.png",
+    fog: "bg-fog.png",
+    rain: "bg-rain.png",
+    snow: "bg-snow.png",
+    thunder: "bg-thunder.png",
+  };
+
+  function getWeatherBackground(code) {
+    if ([0, 1].includes(code)) return WEATHER_BACKGROUNDS.clear;
+    if ([2, 3].includes(code)) return WEATHER_BACKGROUNDS.cloudy;
+    if ([45, 48].includes(code)) return WEATHER_BACKGROUNDS.fog;
+    if ([51, 53, 55, 61, 63, 65, 80, 81].includes(code))
+      return WEATHER_BACKGROUNDS.rain;
+    if ([71, 73, 75].includes(code)) return WEATHER_BACKGROUNDS.snow;
+    if ([82, 95, 96, 99].includes(code)) return WEATHER_BACKGROUNDS.thunder;
+    return WEATHER_BACKGROUNDS.clear; // Fallback
+  }
+
+  // Hilfsfunktion, um den Hintergrund im Overlay anzuwenden
+  function applyDetailBackground(code) {
+    const bgUrl = getWeatherBackground(code);
+    // Wir legen einen leichten dunklen Verlauf über das Bild, damit deine weißen/grünen Texte gut lesbar bleiben
+    overlay.style.backgroundImage = `linear-gradient(rgba(18, 18, 18, 0.85), rgba(18, 18, 18, 0.95)), url('${bgUrl}')`;
+    overlay.style.backgroundSize = "cover";
+    overlay.style.backgroundPosition = "center";
+  }
+
   // Zeit synchronisieren
   async function syncTime() {
     try {
@@ -832,6 +861,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function closeDetail() {
     overlay.classList.remove("active");
+    overlay.style.backgroundImage = "";
     document.body.style.overflow = "";
     activeCity = null;
     hourlyContainer.style.display = "none";
@@ -853,6 +883,7 @@ document.addEventListener("DOMContentLoaded", () => {
     hourlyContainer.style.display = "none";
 
     if (weatherCache[city.id] && weatherCache[city.id].hourly) {
+      applyDetailBackground(weatherCache[city.id].code);
       updateDetailWeatherUI(weatherCache[city.id]);
       renderForecast(
         weatherCache[city.id].fullForecast || weatherCache[city.id].forecast,
@@ -863,6 +894,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
+      const weather = {
+        code: current.weathercode, // <--- DIESE ZEILE HINZUFÜGEN
+        temp: Math.round(current.temperature),
+        desc: WMO_CODES[current.weathercode] || "Unbekannt",
+        // ... restlicher Code bleibt gleich
+      };
       const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&hourly=temperature_2m,weathercode&timezone=auto`;
       const weatherRes = await fetch(weatherUrl);
       const weatherData = await weatherRes.json();
@@ -890,6 +927,7 @@ document.addEventListener("DOMContentLoaded", () => {
       };
 
       weatherCache[city.id] = weather;
+      applyDetailBackground(weather.code);
       updateDetailWeatherUI(weather);
       renderForecast(weather.fullForecast, city.id);
     } catch (error) {
