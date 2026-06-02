@@ -107,19 +107,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return WEATHER_BACKGROUNDS.rain;
     if ([71, 73, 75].includes(code)) return WEATHER_BACKGROUNDS.snow;
     if ([82, 95, 96, 99].includes(code)) return WEATHER_BACKGROUNDS.thunder;
-    return WEATHER_BACKGROUNDS.clear; // Fallback
+    return WEATHER_BACKGROUNDS.clear;
   }
 
-  // Hilfsfunktion, um den Hintergrund im Overlay anzuwenden
   function applyDetailBackground(code) {
     const bgUrl = getWeatherBackground(code);
-    // Wir legen einen leichten dunklen Verlauf über das Bild, damit deine weißen/grünen Texte gut lesbar bleiben
     overlay.style.backgroundImage = `linear-gradient(rgba(18, 18, 18, 0.85), rgba(18, 18, 18, 0.95)), url('${bgUrl}')`;
     overlay.style.backgroundSize = "cover";
     overlay.style.backgroundPosition = "center";
   }
 
-  // Zeit synchronisieren
   async function syncTime() {
     try {
       const controller = new AbortController();
@@ -146,7 +143,6 @@ document.addEventListener("DOMContentLoaded", () => {
   syncTime();
   setInterval(syncTime, 60 * 60 * 1000);
 
-  // Stadt-Datenbank
   const cityDatabase = [
     {
       id: "berlin",
@@ -463,7 +459,6 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeCity = null;
   const weatherCache = {};
 
-  // Stadt-Karte erstellen MIT WETTER
   function buildCard(city) {
     const card = document.createElement("div");
     card.className = "clock-card";
@@ -471,7 +466,6 @@ document.addEventListener("DOMContentLoaded", () => {
     card.dataset.search = (city.name + " " + city.country).toLowerCase();
     card.dataset.cityId = city.id;
 
-    // Favoriten-Stern
     const starBtn = document.createElement("button");
     starBtn.className = "star-btn";
     starBtn.dataset.cityId = city.id;
@@ -482,22 +476,18 @@ document.addEventListener("DOMContentLoaded", () => {
       toggleFavorite(city.id);
     });
 
-    // Stadtname
     const zoneName = document.createElement("div");
     zoneName.className = "zone-name";
     zoneName.innerHTML = `<span class="city-flag">${city.country}</span>${city.name}`;
 
-    // Uhrzeit (klein)
     const timeEl = document.createElement("div");
     timeEl.className = "time";
     timeEl.textContent = "--:--:--";
 
-    // Datum
     const dateEl = document.createElement("div");
     dateEl.className = "date";
     dateEl.textContent = "...";
 
-    // Wetter-Bereich
     const weatherEl = document.createElement("div");
     weatherEl.className = "card-weather";
     weatherEl.innerHTML = `
@@ -508,7 +498,6 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
     `;
 
-    // Mini-Forecast (3 Tage)
     const forecastEl = document.createElement("div");
     forecastEl.className = "card-forecast";
     forecastEl.innerHTML = `
@@ -539,7 +528,6 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   const dateOptions = { weekday: "short", day: "2-digit", month: "2-digit" };
 
-  // Schnellzugriff
   function buildQuickAccess() {
     const popularCities = [
       "berlin",
@@ -562,7 +550,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Wetter für Karte laden
   async function loadCardWeather(city) {
     const cardData = cityCards[city.id];
     if (!cardData) return;
@@ -578,6 +565,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const daily = weatherData.daily;
       const hourly = weatherData.hourly;
       const weather = {
+        code: current.weathercode,
         temp: Math.round(current.temperature),
         desc: WMO_CODES[current.weathercode] || "Unbekannt",
         icon: WMO_ICONS[current.weathercode] || "🌡️",
@@ -596,7 +584,6 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         hourly: hourly,
       };
-
       weatherCache[city.id] = weather;
       updateCardWeatherUI(city.id, weather);
       updateWeatherStats();
@@ -608,27 +595,15 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateCardWeatherUI(cityId, weather) {
     const cardData = cityCards[cityId];
     if (!cardData) return;
-    cardData.weatherEl.innerHTML = `
-      <div class="card-weather-icon">${weather.icon}</div>
-      <div class="card-weather-info">
-        <div class="card-weather-temp">${weather.temp}°C</div>
-        <div class="card-weather-desc">${weather.desc}</div>
-      </div>
-    `;
+    cardData.weatherEl.innerHTML = `<div class="card-weather-icon">${weather.icon}</div><div class="card-weather-info"><div class="card-weather-temp">${weather.temp}°C</div><div class="card-weather-desc">${weather.desc}</div></div>`;
     cardData.forecastEl.innerHTML = weather.forecast
       .map(
-        (day) => `
-      <div class="card-forecast-day">
-        <div class="card-forecast-name">${day.day}</div>
-        <div class="card-forecast-icon">${day.icon}</div>
-        <div class="card-forecast-temp">${day.max}°<span>/${day.min}°</span></div>
-      </div>
-    `,
+        (day) =>
+          `<div class="card-forecast-day"><div class="card-forecast-name">${day.day}</div><div class="card-forecast-icon">${day.icon}</div><div class="card-forecast-temp">${day.max}°<span>/${day.min}°</span></div></div>`,
       )
       .join("");
   }
 
-  // Wetter-Statistiken im Hero aktualisieren
   function updateWeatherStats() {
     let sunny = 0,
       rain = 0,
@@ -647,7 +622,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (statCloudy) statCloudy.textContent = cloudy;
   }
 
-  // Alle sichtbaren Karten-Wetter laden
   function loadAllVisibleWeather() {
     Object.values(cityCards).forEach((item) => {
       if (item.card.style.display !== "none") {
@@ -656,25 +630,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Filter anwenden
   function applyFilter(query, skipAPISearch = false) {
     const term = query.toLowerCase().trim();
-
-    // --- ANPASSUNG 2: SUCHLEISTE BEIM SUCHEN WIEDER NACH OBEN HOLEN ---
     const sWrapper = document.querySelector(".search-wrapper");
+
     if (term === "") {
       const wOverview = document.querySelector(".welcome-weather-overview");
       if (sWrapper && wOverview) wOverview.appendChild(sWrapper);
-
-      // Status-Nachricht in den Hero verschieben (oben auf dem Bild)
       if (statusMessage.parentElement !== welcomeHero) {
         welcomeHero.appendChild(statusMessage);
       }
     } else {
       if (sWrapper && welcomeHero)
         welcomeHero.parentNode.insertBefore(sWrapper, welcomeHero);
-
-      // Status-Nachricht aus dem Hero heraus verschieben (für Suchergebnisse)
       if (statusMessage.parentElement === welcomeHero) {
         welcomeHero.parentNode.insertBefore(
           statusMessage,
@@ -748,7 +716,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // API-Suche
   async function searchCityAPI(query) {
     if (searchCache.has(query)) return;
     searchCache.add(query);
@@ -758,7 +725,6 @@ document.addEventListener("DOMContentLoaded", () => {
         `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=de&format=json`,
       );
       const data = await res.json();
-
       if (data.results && data.results.length > 0) {
         let newCitiesAdded = 0;
         data.results.forEach((result) => {
@@ -805,7 +771,6 @@ document.addEventListener("DOMContentLoaded", () => {
     return String.fromCodePoint(...codePoints);
   }
 
-  // Uhren aktualisieren
   function updateClocks() {
     const t = now();
     for (const id in cityCards) {
@@ -828,7 +793,6 @@ document.addEventListener("DOMContentLoaded", () => {
         item.timeEl.textContent = "N/A";
       }
     }
-
     if (activeCity) {
       try {
         detailTime.textContent = t.toLocaleTimeString("de-DE", {
@@ -848,7 +812,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Detailansicht öffnen
   function openDetail(city) {
     activeCity = city;
     detailZone.textContent = city.country + " " + city.name;
@@ -874,7 +837,6 @@ document.addEventListener("DOMContentLoaded", () => {
     detailStarBtn.textContent = isFav ? "★" : "☆";
   }
 
-  // Detail-Wetter laden
   async function getWeatherForCity(city) {
     weatherLoading.style.display = "block";
     weatherInfo.style.display = "none";
@@ -894,12 +856,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      const weather = {
-        code: current.weathercode, // <--- DIESE ZEILE HINZUFÜGEN
-        temp: Math.round(current.temperature),
-        desc: WMO_CODES[current.weathercode] || "Unbekannt",
-        // ... restlicher Code bleibt gleich
-      };
       const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&hourly=temperature_2m,weathercode&timezone=auto`;
       const weatherRes = await fetch(weatherUrl);
       const weatherData = await weatherRes.json();
@@ -907,6 +863,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const daily = weatherData.daily;
       const hourly = weatherData.hourly;
       const weather = {
+        code: current.weathercode,
         temp: Math.round(current.temperature),
         desc: WMO_CODES[current.weathercode] || "Unbekannt",
         icon: WMO_ICONS[current.weathercode] || "🌡️",
@@ -987,7 +944,6 @@ document.addEventListener("DOMContentLoaded", () => {
       hourlyContainer.style.display = "none";
       return;
     }
-
     const hourly = weather.hourly;
     hourlyTitle.textContent = `⏱️ Stündlicher Verlauf – ${new Date(targetDate).toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" })}`;
     hourlyScroll.innerHTML = "";
@@ -1023,7 +979,6 @@ document.addEventListener("DOMContentLoaded", () => {
     hourlyContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
-  // Event-Listener
   detailStarBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     if (activeCity) toggleFavorite(activeCity.id);
@@ -1064,7 +1019,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   clearBtn.addEventListener("click", clearSearch);
 
-  // Start
   applyFilter("");
   buildQuickAccess();
   setInterval(updateClocks, 1000);
