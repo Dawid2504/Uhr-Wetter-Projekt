@@ -224,9 +224,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
       function applyDetailBackground(code) {
         const bgUrl = getWeatherBackground(code);
-        overlay.style.backgroundImage = `linear-gradient(rgba(18, 18, 18, 0.6), rgba(18, 18, 18, 0.75)), url('${bgUrl}')`;
+        const isLight = document.body.classList.contains("light-mode");
+
+        // ✅ Gradient anpassen: Dunkel für Dark Mode, Hell für Light Mode
+        const overlayGradient = isLight
+          ? "linear-gradient(rgba(244, 244, 244, 0.75), rgba(244, 244, 244, 0.9))"
+          : "linear-gradient(rgba(18, 18, 18, 0.6), rgba(18, 18, 18, 0.8))";
+
+        // ⚠️ Falls du die Bilder bereits in den "images/" Ordner verschoben hast:
+        // Nutze: url('images/${bgUrl}')
+        // Sonst: url('${bgUrl}')
+        overlay.style.backgroundImage = `${overlayGradient}, url('${bgUrl}')`;
         overlay.style.backgroundSize = "cover";
         overlay.style.backgroundPosition = "center";
+
+        // ✅ Textfarbe im Detail explizit setzen, damit sie immer lesbar bleibt
+        const detailContent = document.querySelector(".detail-content");
+        if (detailContent) {
+          detailContent.style.color = isLight ? "#111" : "#fff";
+        }
       }
 
       async function syncTime() {
@@ -683,7 +699,7 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
         try {
-          const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&hourly=temperature_2m,weathercode&timezone=auto`;
+          const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&hourly=temperature_2m,weathercode&timezone=auto`;
           const weatherRes = await fetch(weatherUrl);
           const weatherData = await weatherRes.json();
           const current = weatherData.current_weather;
@@ -729,6 +745,13 @@ document.addEventListener("DOMContentLoaded", () => {
       <div class="card-weather-info">
         <div class="card-weather-temp">${weather.temp}°C</div>
         <div class="card-weather-desc">${weather.desc}</div>
+        
+        <!-- NEUE ZEILE MIT ERWEITERTEN DATEN -->
+        <div class="card-weather-extra" style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 5px; display: flex; gap: 8px;">
+           <span>🌅 ${formatTime(weather.sunrise)}</span>
+           <span> ${formatTime(weather.sunset)}</span>
+           <span style="color:${uvColor}">☀️ UV: ${weather.uvIndex || "-"}</span>
+        </div>
       </div>
     `;
         cardData.forecastEl.innerHTML = weather.forecast
@@ -1010,6 +1033,10 @@ document.addEventListener("DOMContentLoaded", () => {
             temp: Math.round(current.temperature),
             desc: WMO_CODES[current.weathercode] || "Unbekannt",
             icon: WMO_ICONS[current.weathercode] || "🌡️",
+            // Neue Daten
+            sunrise: daily.sunrise ? daily.sunrise[0] : null,
+            sunset: daily.sunset ? daily.sunset[0] : null,
+            uvIndex: daily.uv_index_max ? daily.uv_index_max[0] : null,
             forecast: daily.time.slice(0, 3).map((date, i) => ({
               date: date,
               day: new Date(date).toLocaleDateString("de-DE", {
@@ -1042,9 +1069,27 @@ document.addEventListener("DOMContentLoaded", () => {
       function updateDetailWeatherUI(w) {
         weatherLoading.style.display = "none";
         weatherInfo.style.display = "flex";
+
+        const formatTime = (isoStr) =>
+          isoStr
+            ? new Date(isoStr).toLocaleTimeString("de-DE", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "--:--";
+
         weatherIcon.textContent = w.icon;
         weatherTemp.textContent = w.temp + "°C";
-        weatherDesc.textContent = w.desc;
+
+        // Beschreibung + Sonne + UV untereinander
+        weatherDesc.innerHTML = `
+        <div>${w.desc}</div>
+        <div style="margin-top: 5px; font-size: 0.9rem; display: flex; gap: 15px; justify-content: center;">
+            <span>🌅 ${formatTime(w.sunrise)}</span>
+            <span>🌇 ${formatTime(w.sunset)}</span>
+            <span>☀️ UV: ${w.uvIndex || "-"}</span>
+        </div>
+    `;
       }
 
       function renderForecast(forecast, cityId) {
@@ -2090,4 +2135,22 @@ document.addEventListener("DOMContentLoaded", () => {
   applyFilter("");
   buildQuickAccess();
   setInterval(updateClocks, 1000);
+  // --- THEME TOGGLE LOGIK ---
+  const themeBtn = document.getElementById("theme-toggle");
+  const savedTheme = localStorage.getItem("theme");
+
+  // Prüfen ob Light Mode gespeichert war
+  if (savedTheme === "light") {
+    document.body.classList.add("light-mode");
+    themeBtn.textContent = "☀️";
+  }
+
+  themeBtn.addEventListener("click", () => {
+    document.body.classList.toggle("light-mode");
+    const isLight = document.body.classList.contains("light-mode");
+
+    // Speichern und Icon ändern
+    localStorage.setItem("theme", isLight ? "light" : "dark");
+    themeBtn.textContent = isLight ? "☀️" : "";
+  });
 });
