@@ -92,21 +92,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Zeit synchronisieren
   async function syncTime() {
-    try {
-      const res = await fetch(
-        "https://timeapi.io/api/time/current/zone?timeZone=UTC",
-        { cache: "no-store" },
-      );
-      const data = await res.json();
-      const serverTime = new Date(data.dateTime + "Z").getTime();
-      timeOffset = serverTime - Date.now();
-      syncStatus.textContent = "✅ Zeit synchronisiert";
-      syncStatus.classList.add("ok");
-    } catch (err) {
-      syncStatus.textContent = "⚠️ Offline-Modus";
-      syncStatus.classList.add("error");
-    }
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 Sekunden Timeout
+
+    const res = await fetch(
+      "https://timeapi.io/api/time/current/zone?timeZone=UTC",
+      { cache: "no-store", signal: controller.signal }
+    );
+    clearTimeout(timeoutId);
+
+    if (!res.ok) throw new Error("API antwortet nicht");
+
+    const data = await res.json();
+    const serverTime = new Date(data.dateTime + "Z").getTime();
+    timeOffset = serverTime - Date.now();
+    syncStatus.textContent = "✅ Zeit synchronisiert";
+    syncStatus.classList.add("ok");
+  } catch (err) {
+    console.warn("Zeit-Sync fehlgeschlagen, verwende lokale Zeit:", err);
+    timeOffset = 0; // Fallback: lokale Zeit nutzen
+    syncStatus.textContent = "⏱️ Lokale Zeit";
+    syncStatus.classList.add("ok"); // Kein roter Fehler mehr
   }
+}
 
   function now() {
     return new Date(Date.now() + timeOffset);
@@ -533,48 +542,49 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Wetter für Karte laden
   async function loadCardWeather(city) {
-    const cardData = cityCards[city.id];
-    if (!cardData) return;
+  const cardData = cityCards[city.id];
+  if (!cardData) return;
 
-    if (weatherCache[city.id]) {
-      updateCardWeatherUI(city.id, weatherCache[city.id]);
-      return;
-    }
-
-    try {
-      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
-      const weatherRes = await fetch(weatherUrl);
-      const weatherData = await weatherRes.json();
-      const current = weatherData.current_weather;
-      const daily = weatherData.daily;
-
-      const weather = {
-        temp: Math.round(current.temperature),
-        desc: WMO_CODES[current.weathercode] || "Unbekannt",
-        icon: WMO_ICONS[current.weathercode] || "🌡️",
-        forecast: daily.time.slice(0, 3).map((date, i) => ({
-          date: date,
-          day: new Date(date).toLocaleDateString("de-DE", { weekday: "short" }),
-          icon: WMO_ICONS[daily.weathercode[i]] || "🌡️",
-          max: Math.round(daily.temperature_2m_max[i]),
-          min: Math.round(daily.temperature_2m_min[i]),
-        })),
-        fullForecast: {
-          time: daily.time,
-          weathercode: daily.weathercode,
-          max: daily.temperature_2m_max,
-          min: daily.temperature_2m_min,
-        },
-        hourly: weatherData.hourly,
-      };
-
-      weatherCache[city.id] = weather;
-      updateCardWeatherUI(city.id, weather);
-      updateWeatherStats();
-    } catch (error) {
-      console.warn("Wetter für " + city.name + " fehlgeschlagen:", error);
-    }
+  if (weatherCache[city.id]) {
+    updateCardWeatherUI(city.id, weatherCache[city.id]);
+    return;
   }
+
+  try {
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&hourly=temperature_2m,weathercode&timezone=auto`;
+    const weatherRes = await fetch(weatherUrl);
+    const weatherData = await weatherRes.json();
+    const current = weatherData.current_weather;
+    const daily = weatherData.daily;
+    const hourly = weatherData.hourly;
+
+    const weather = {
+      temp: Math.round(current.temperature),
+      desc: WMO_CODES[current.weathercode] || "Unbekannt",
+      icon: WMO_ICONS[current.weathercode] || "🌡️",
+      forecast: daily.time.slice(0, 3).map((date, i) => ({
+        date: date,
+        day: new Date(date).toLocaleDateString("de-DE", { weekday: "short" }),
+        icon: WMO_ICONS[daily.weathercode[i]] || "🌡️",
+        max: Math.round(daily.temperature_2m_max[i]),
+        min: Math.round(daily.temperature_2m_min[i]),
+      })),
+      fullForecast: {
+        time: daily.time.slice(0, 7),
+        weathercode: daily.weathercode.slice(0, 7),
+        max: daily.temperature_2m_max.slice(0, 7),
+        min: daily.temperature_2m_min.slice(0, 7),
+      },
+      hourly: hourly, // ✅ Auch hier hourly laden, damit Detailansicht direkt funktioniert
+    };
+
+    weatherCache[city.id] = weather;
+    updateCardWeatherUI(city.id, weather);
+    updateWeatherStats();
+  } catch (error) {
+    console.warn("Wetter für " + city.name + " fehlgeschlagen:", error);
+  }
+}
 
   function updateCardWeatherUI(cityId, weather) {
     const cardData = cityCards[cityId];
@@ -839,58 +849,61 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Detail-Wetter laden
   async function getWeatherForCity(city) {
-    weatherLoading.style.display = "block";
-    weatherInfo.style.display = "none";
-    weatherError.style.display = "none";
-    forecastContainer.style.display = "none";
-    hourlyContainer.style.display = "none";
+  weatherLoading.style.display = "block";
+  weatherInfo.style.display = "none";
+  weatherError.style.display = "none";
+  forecastContainer.style.display = "none";
+  hourlyContainer.style.display = "none";
 
-    if (weatherCache[city.id]) {
-      updateDetailWeatherUI(weatherCache[city.id]);
-      renderForecast(
-        weatherCache[city.id].fullForecast || weatherCache[city.id].forecast,
-        city.id,
-      );
-      return;
-    }
-
-    try {
-      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&hourly=temperature_2m,weathercode&timezone=auto`;
-      const weatherRes = await fetch(weatherUrl);
-      const weatherData = await weatherRes.json();
-      const current = weatherData.current_weather;
-      const daily = weatherData.daily;
-      const hourly = weatherData.hourly;
-
-      const weather = {
-        temp: Math.round(current.temperature),
-        desc: WMO_CODES[current.weathercode] || "Unbekannt",
-        icon: WMO_ICONS[current.weathercode] || "🌡️",
-        forecast: daily.time.slice(0, 3).map((date, i) => ({
-          date: date,
-          day: new Date(date).toLocaleDateString("de-DE", { weekday: "short" }),
-          icon: WMO_ICONS[daily.weathercode[i]] || "🌡️",
-          max: Math.round(daily.temperature_2m_max[i]),
-          min: Math.round(daily.temperature_2m_min[i]),
-        })),
-        fullForecast: {
-          time: daily.time.slice(0, 7),
-          weathercode: daily.weathercode.slice(0, 7),
-          max: daily.temperature_2m_max.slice(0, 7),
-          min: daily.temperature_2m_min.slice(0, 7),
-        },
-        hourly: hourly,
-      };
-
-      weatherCache[city.id] = weather;
-      updateDetailWeatherUI(weather);
-      renderForecast(weather.fullForecast, city.id);
-    } catch (error) {
-      console.warn("Wetter für " + city.name + " fehlgeschlagen:", error);
-      weatherLoading.style.display = "none";
-      weatherError.style.display = "block";
-    }
+  // ✅ FIX: Prüfe, ob hourly im Cache ist!
+  if (weatherCache[city.id] && weatherCache[city.id].hourly) {
+    updateDetailWeatherUI(weatherCache[city.id]);
+    renderForecast(
+      weatherCache[city.id].fullForecast || weatherCache[city.id].forecast,
+      city.id
+    );
+    weatherLoading.style.display = "none";
+    return;
   }
+
+  try {
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&hourly=temperature_2m,weathercode&timezone=auto`;
+    const weatherRes = await fetch(weatherUrl);
+    const weatherData = await weatherRes.json();
+    const current = weatherData.current_weather;
+    const daily = weatherData.daily;
+    const hourly = weatherData.hourly;
+
+    const weather = {
+      temp: Math.round(current.temperature),
+      desc: WMO_CODES[current.weathercode] || "Unbekannt",
+      icon: WMO_ICONS[current.weathercode] || "🌡️",
+      forecast: daily.time.slice(0, 3).map((date, i) => ({
+        date: date,
+        day: new Date(date).toLocaleDateString("de-DE", { weekday: "short" }),
+        icon: WMO_ICONS[daily.weathercode[i]] || "🌡️",
+        max: Math.round(daily.temperature_2m_max[i]),
+        min: Math.round(daily.temperature_2m_min[i]),
+      })),
+      fullForecast: {
+        time: daily.time.slice(0, 7),
+        weathercode: daily.weathercode.slice(0, 7),
+        max: daily.temperature_2m_max.slice(0, 7),
+        min: daily.temperature_2m_min.slice(0, 7),
+      },
+      hourly: hourly, // ✅ Jetzt immer vorhanden
+    };
+
+    // ✅ Cache überschreiben MIT hourly
+    weatherCache[city.id] = weather;
+    updateDetailWeatherUI(weather);
+    renderForecast(weather.fullForecast, city.id);
+  } catch (error) {
+    console.warn("Wetter für " + city.name + " fehlgeschlagen:", error);
+    weatherLoading.style.display = "none";
+    weatherError.style.display = "block";
+  }
+}
 
   function updateDetailWeatherUI(w) {
     weatherLoading.style.display = "none";
