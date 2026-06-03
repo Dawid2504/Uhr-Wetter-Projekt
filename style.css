@@ -26,19 +26,16 @@ body {
   max-width: 1200px;
   margin: 0 auto;
 }
-
 header {
   text-align: center;
   margin-bottom: 30px;
 }
-
 h1 {
   font-size: 2rem;
   margin: 0 0 8px;
   letter-spacing: 2px;
   text-transform: uppercase;
 }
-
 header p {
   color: var(--text-secondary);
   margin: 0 0 20px;
@@ -50,7 +47,6 @@ header p {
   max-width: 600px;
   margin: 0 auto 15px;
 }
-
 #search-input {
   width: 100%;
   padding: 16px 45px 16px 20px;
@@ -62,12 +58,10 @@ header p {
   outline: none;
   transition: all 0.3s ease;
 }
-
 #search-input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 15px var(--accent-glow);
 }
-
 .clear-btn {
   position: absolute;
   right: 15px;
@@ -82,11 +76,9 @@ header p {
   display: none;
   transition: color 0.2s;
 }
-
 .clear-btn:hover {
   color: var(--accent);
 }
-
 .clear-btn.visible {
   display: block;
 }
@@ -98,8 +90,6 @@ header p {
   font-size: 0.95rem;
   min-height: 30px;
 }
-
-/* NEU: Status im Hero oben positionieren */
 .welcome-hero .status {
   position: absolute;
   top: 20px;
@@ -109,14 +99,12 @@ header p {
   margin: 0;
 }
 
-/* ===== GRID ===== */
+/* ===== GRID & KARTEN ===== */
 .clocks-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
 }
-
-/* ===== STADT-KARTEN MIT WETTER ===== */
 .clock-card {
   background-color: var(--card-bg);
   padding: 16px;
@@ -129,12 +117,10 @@ header p {
   cursor: pointer;
   position: relative;
 }
-
 .clock-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 20px var(--accent-glow);
 }
-
 .zone-name {
   font-size: 1.1rem;
   font-weight: 600;
@@ -143,18 +129,15 @@ header p {
   align-items: center;
   gap: 6px;
 }
-
 .city-flag {
   font-size: 1.2rem;
 }
-
 .time {
   font-size: 0.85rem;
   font-family: "Courier New", monospace;
   color: var(--text-secondary);
   margin-bottom: 4px;
 }
-
 .date {
   font-size: 0.8rem;
   color: var(--text-secondary);
@@ -162,7 +145,6 @@ header p {
   opacity: 0.7;
 }
 
-/* ===== WETTER IN KARTE ===== */
 .card-weather {
   display: flex;
   align-items: center;
@@ -172,36 +154,30 @@ header p {
   border-radius: 10px;
   margin-bottom: 12px;
 }
-
 .card-weather-icon {
   font-size: 2.5rem;
   line-height: 1;
 }
-
 .card-weather-info {
   flex: 1;
 }
-
 .card-weather-temp {
   font-size: 1.8rem;
   font-weight: bold;
   color: var(--accent);
 }
-
 .card-weather-desc {
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin-top: 2px;
 }
 
-/* ===== MINI-FORECAST IN KARTE ===== */
 .card-forecast {
   display: flex;
   gap: 8px;
   padding-top: 12px;
   border-top: 1px solid var(--border);
 }
-
 .card-forecast-day {
   flex: 1;
   text-align: center;
@@ -209,28 +185,23 @@ header p {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.02);
 }
-
 .card-forecast-name {
   font-size: 0.75rem;
   color: var(--text-secondary);
   margin-bottom: 4px;
 }
-
 .card-forecast-icon {
   font-size: 1.3rem;
   margin: 4px 0;
 }
-
 .card-forecast-temp {
   font-size: 0.75rem;
   color: var(--text-primary);
 }
-
 .card-forecast-temp span {
   color: var(--text-secondary);
 }
 
-/* ===== FAVORITEN-STERN ===== */
 .star-btn {
   position: absolute;
   top: 12px;
@@ -245,17 +216,14 @@ header p {
     color 0.2s ease;
   z-index: 2;
 }
-
 .star-btn:hover {
   transform: scale(1.25);
 }
-
 .star-btn.active {
   color: #ffd700;
   text-shadow: 0 0 8px rgba(255, 215, 0, 0.7);
 }
 
-/* ===== FAVORITEN-SEKTION ===== */
 .favorites-section {
   margin: 30px 0 40px;
   padding: 20px;
@@ -263,7 +231,6 @@ header p {
   border: 1px dashed rgba(255, 215, 0, 0.25);
   border-radius: 16px;
 }
-
 .section-title {
   font-size: 1.1rem;
   color: var(--text-secondary);
@@ -282,7 +249,6 @@ header p {
   justify-content: center;
   padding: 40px 20px;
   margin: -20px -20px 30px -20px;
-  border-radius: 0;
   overflow: hidden;
   transition:
     opacity 0.4s ease,
@@ -291,7 +257,6 @@ header p {
   background-size: cover;
   background-position: center;
 }
-
 .welcome-overlay {
   position: absolute;
   inset: 0;
@@ -302,7 +267,6 @@ header p {
   );
   z-index: 1;
 }
-
 .welcome-content {
   position: relative;
   z-index: 2;
@@ -310,7 +274,6 @@ header p {
   max-width: 800px;
   width: 100%;
 }
-
 .welcome-title {
   font-size: 2.5rem;
   margin: 0 0 10px;
@@ -321,14 +284,12 @@ header p {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-
 .welcome-subtitle {
   color: var(--text-secondary);
   font-size: 1.1rem;
   margin: 0 0 40px;
 }
 
-/* ===== WETTER-ÜBERSICHT IM HERO ===== */
 .welcome-weather-overview {
   display: flex;
   justify-content: center;
@@ -336,7 +297,6 @@ header p {
   margin: 30px 0;
   flex-wrap: wrap;
 }
-
 .weather-stat {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
@@ -345,24 +305,20 @@ header p {
   min-width: 120px;
   transition: all 0.2s ease;
 }
-
 .weather-stat:hover {
   border-color: var(--accent);
   transform: translateY(-3px);
 }
-
 .weather-stat-icon {
   font-size: 2rem;
   margin-bottom: 8px;
 }
-
 .weather-stat-label {
   color: var(--text-secondary);
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
-
 .weather-stat-value {
   font-size: 2rem;
   font-weight: bold;
@@ -370,11 +326,9 @@ header p {
   margin-top: 4px;
 }
 
-/* ===== SCHNELLZUGRIFF ===== */
 .welcome-quick-access {
   margin: 30px 0 25px;
 }
-
 .quick-title {
   color: var(--text-secondary);
   font-size: 0.9rem;
@@ -382,14 +336,12 @@ header p {
   text-transform: uppercase;
   margin: 0 0 15px;
 }
-
 .quick-cities {
   display: flex;
   justify-content: center;
   gap: 10px;
   flex-wrap: wrap;
 }
-
 .quick-city-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
@@ -400,14 +352,12 @@ header p {
   font-size: 0.9rem;
   transition: all 0.2s ease;
 }
-
 .quick-city-btn:hover {
   background: var(--accent);
   color: var(--bg-color);
   border-color: var(--accent);
   transform: translateY(-2px);
 }
-
 .welcome-hint {
   color: var(--text-secondary);
   font-size: 0.9rem;
@@ -418,7 +368,6 @@ header p {
   border-left: 3px solid var(--accent);
   display: inline-block;
 }
-
 .welcome-hero.hidden {
   opacity: 0;
   max-height: 0;
@@ -446,12 +395,10 @@ header p {
     opacity 0.3s ease,
     background-image 0.8s ease-in-out;
 }
-
 .detail-overlay.active {
   opacity: 1;
   pointer-events: auto;
 }
-
 .detail-close {
   position: fixed;
   top: 20px;
@@ -466,12 +413,10 @@ header p {
   transition: all 0.2s ease;
   z-index: 1002;
 }
-
 .detail-close:hover {
   background: var(--accent);
   color: var(--bg-color);
 }
-
 .detail-star-btn {
   position: fixed;
   top: 20px;
@@ -486,24 +431,20 @@ header p {
   z-index: 1001;
   transition: all 0.2s ease;
 }
-
 .detail-star-btn:hover {
   border-color: #ffd700;
   color: #ffd700;
 }
-
 .detail-star-btn.active {
   color: #ffd700;
   border-color: #ffd700;
 }
-
 .detail-content {
   text-align: center;
   padding: 80px 20px 40px;
   width: 100%;
   max-width: 900px;
 }
-
 .detail-zone {
   font-size: 1.3rem;
   color: var(--text-secondary);
@@ -511,7 +452,6 @@ header p {
   text-transform: uppercase;
   margin-bottom: 15px;
 }
-
 .detail-time {
   font-size: clamp(2.5rem, 10vw, 5rem);
   font-weight: bold;
@@ -521,20 +461,12 @@ header p {
   line-height: 1;
   margin: 10px 0;
 }
-
 .detail-date {
   font-size: 1.1rem;
   color: #aaa;
   margin-top: 10px;
 }
 
-.detail-offset {
-  margin-top: 15px;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-/* ===== WETTER IM DETAIL ===== */
 .detail-weather {
   margin-top: 30px;
   padding: 20px;
@@ -546,7 +478,6 @@ header p {
   align-items: center;
   justify-content: center;
 }
-
 .weather-info {
   display: flex;
   align-items: baseline;
@@ -554,35 +485,29 @@ header p {
   flex-wrap: wrap;
   justify-content: center;
 }
-
 .weather-icon {
   font-size: 3rem;
   line-height: 1;
 }
-
 .weather-temp {
   font-size: 3.5rem;
   font-weight: bold;
   color: var(--accent);
 }
-
 .weather-desc {
   font-size: 1.2rem;
   color: var(--text-secondary);
 }
-
 .weather-loading,
 .weather-error {
   color: var(--text-secondary);
   font-size: 1rem;
 }
 
-/* ===== 7-TAGE VORHERSAGE ===== */
 .forecast-container {
   width: 100%;
   margin-top: 25px;
 }
-
 .forecast-title {
   font-size: 0.9rem;
   color: var(--accent);
@@ -591,7 +516,6 @@ header p {
   margin-bottom: 15px;
   text-align: center;
 }
-
 .forecast-scroll {
   display: flex;
   gap: 10px;
@@ -601,16 +525,13 @@ header p {
   scrollbar-color: var(--accent) transparent;
   scroll-snap-type: x mandatory;
 }
-
 .forecast-scroll::-webkit-scrollbar {
   height: 5px;
 }
-
 .forecast-scroll::-webkit-scrollbar-thumb {
   background: var(--accent);
   border-radius: 3px;
 }
-
 .forecast-day {
   flex: 0 0 90px;
   background: var(--card-bg);
@@ -628,39 +549,32 @@ header p {
     transform 0.2s ease,
     border-color 0.2s ease;
 }
-
 .forecast-day:hover {
   transform: translateY(-5px);
   border-color: var(--accent);
 }
-
 .forecast-day.selected {
   border-color: var(--accent);
   background: rgba(0, 255, 153, 0.08);
 }
-
 .forecast-day-name {
   font-size: 0.85rem;
   color: var(--text-secondary);
   font-weight: 500;
 }
-
 .forecast-icon {
   font-size: 1.8rem;
   line-height: 1;
 }
-
 .forecast-temps {
   font-size: 0.9rem;
   color: var(--text-primary);
 }
-
 .forecast-temps span:last-child {
   color: var(--text-secondary);
   margin-left: 2px;
 }
 
-/* ===== STUNDENVORHERSAGE ===== */
 .hourly-container {
   width: 100%;
   margin-top: 20px;
@@ -669,7 +583,6 @@ header p {
   border-radius: 16px;
   padding: 20px;
 }
-
 .hourly-title {
   font-size: 0.9rem;
   color: var(--accent);
@@ -678,7 +591,6 @@ header p {
   margin: 0 0 15px;
   text-align: center;
 }
-
 .hourly-scroll {
   display: flex;
   gap: 8px;
@@ -687,16 +599,13 @@ header p {
   scrollbar-width: thin;
   scrollbar-color: var(--accent) transparent;
 }
-
 .hourly-scroll::-webkit-scrollbar {
   height: 6px;
 }
-
 .hourly-scroll::-webkit-scrollbar-thumb {
   background: var(--accent);
   border-radius: 3px;
 }
-
 .hourly-item {
   flex: 0 0 65px;
   background: var(--card-bg);
@@ -710,61 +619,27 @@ header p {
   gap: 4px;
   transition: all 0.2s ease;
 }
-
 .hourly-item:hover {
   transform: translateY(-3px);
   border-color: var(--accent);
 }
-
 .hourly-item.current {
   border-color: var(--accent);
   box-shadow: 0 0 12px var(--accent-glow);
 }
-
 .hourly-hour {
   font-size: 0.8rem;
   color: var(--text-secondary);
   font-weight: 600;
 }
-
 .hourly-icon {
   font-size: 1.4rem;
   line-height: 1;
 }
-
 .hourly-temp {
   font-size: 0.95rem;
   font-weight: bold;
   color: var(--text-primary);
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-  .clocks-grid {
-    grid-template-columns: 1fr;
-  }
-  .welcome-hero {
-    min-height: 50vh;
-    border-radius: 12px;
-  }
-  .welcome-title {
-    font-size: 1.8rem;
-  }
-  .weather-stat {
-    padding: 15px 20px;
-    min-width: 100px;
-  }
-  .detail-close,
-  .detail-star-btn {
-    position: absolute;
-    top: 15px;
-  }
-  .detail-time {
-    font-size: 2.5rem;
-  }
-  .forecast-day {
-    flex: 0 0 80px;
-  }
 }
 
 /* ===== LIGHT MODE THEME ===== */
@@ -775,10 +650,9 @@ body.light-mode {
   --text-secondary: #666666;
   --input-bg: #e0e0e0;
   --border: #cccccc;
-  --accent-glow: rgba(0, 200, 120, 0.3); /* Etwas dezenterer Glow im Hell */
+  --accent-glow: rgba(0, 200, 120, 0.3);
 }
 
-/* Button Styling für den Toggle */
 .theme-toggle-btn {
   position: fixed;
   bottom: 20px;
@@ -798,11 +672,11 @@ body.light-mode {
   align-items: center;
   justify-content: center;
 }
-
 .theme-toggle-btn:hover {
   transform: scale(1.1);
   border-color: var(--accent);
 }
+
 /* ===== REGENRADAR (LEAFLET) ===== */
 .radar-section {
   width: 100%;
@@ -827,14 +701,13 @@ body.light-mode {
   border: 1px solid var(--border);
   z-index: 1;
 }
-/* Dark Mode Filter für die Karten-Kacheln */
 
-/* Damit Popups/Marker (falls vorhanden) normal aussehen */
 .leaflet-marker-pane,
 .leaflet-popup-pane,
 .leaflet-tooltip-pane {
   filter: invert(1) hue-rotate(180deg);
 }
+
 .radar-controls {
   display: flex;
   justify-content: center;
@@ -868,4 +741,33 @@ body.light-mode {
   color: var(--accent);
   min-width: 60px;
   text-align: center;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .clocks-grid {
+    grid-template-columns: 1fr;
+  }
+  .welcome-hero {
+    min-height: 50vh;
+    border-radius: 12px;
+  }
+  .welcome-title {
+    font-size: 1.8rem;
+  }
+  .weather-stat {
+    padding: 15px 20px;
+    min-width: 100px;
+  }
+  .detail-close,
+  .detail-star-btn {
+    position: absolute;
+    top: 15px;
+  }
+  .detail-time {
+    font-size: 2.5rem;
+  }
+  .forecast-day {
+    flex: 0 0 80px;
+  }
 }
