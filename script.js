@@ -1102,28 +1102,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const hourly = weather.hourly;
     hourlyTitle.textContent = `⏱️ Stündlicher Verlauf – ${new Date(targetDate).toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" })}`;
-    hourlyScroll.innerHTML = "";
-    const nowHour = new Date().getHours();
+      hourlyScroll.innerHTML = "";
+  const nowHour = new Date().getHours();
+  const todayDateStr = new Date().toISOString().split("T")[0];
+  const isToday = targetDate === todayDateStr;
 
-    for (let i = 0; i < hourly.time.length; i++) {
-      const timeStr = hourly.time[i];
-      if (timeStr.startsWith(targetDate)) {
-        const hour = parseInt(timeStr.split("T")[1].split(":")[0]);
-        const temp = Math.round(hourly.temperature_2m[i]);
-        const wCode = hourly.weathercode[i];
-        const icon = WMO_ICONS[wCode] || "🌡️";
+  for (let i = 0; i < hourly.time.length; i++) {
+    const timeStr = hourly.time[i];
+    if (timeStr.startsWith(targetDate)) {
+      const hour = parseInt(timeStr.split("T")[1].split(":")[0]);
 
-        const el = document.createElement("div");
-        el.className = "hourly-item";
-        if (
-          targetDate === new Date().toISOString().split("T")[0] &&
-          hour === nowHour
-        )
-          el.classList.add("current");
-        el.innerHTML = `<div class="hourly-hour">${String(hour).padStart(2, "0")}:00</div><div class="hourly-icon">${icon}</div><div class="hourly-temp">${temp}°</div>`;
-        hourlyScroll.appendChild(el);
+      // Vergangene Stunden für heute ausblenden
+      if (isToday && hour < nowHour) {
+        continue;
       }
+
+      const temp = Math.round(hourly.temperature_2m[i]);
+      const wCode = hourly.weathercode[i];
+      const icon = WMO_ICONS[wCode] || "🌡️";
+
+      const el = document.createElement("div");
+      el.className = "hourly-item";
+      if (isToday && hour === nowHour) {
+        el.classList.add("current");
+      }
+      el.innerHTML = `<div class="hourly-hour">${String(hour).padStart(2, "0")}:00</div><div class="hourly-icon">${icon}</div><div class="hourly-temp">${temp}°</div>`;
+      hourlyScroll.appendChild(el);
     }
+  }
     hourlyContainer.style.display = "block";
     hourlyContainer.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
