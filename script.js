@@ -115,7 +115,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const overlayGradient = isLight
       ? "linear-gradient(rgba(244, 244, 244, 0.75), rgba(244, 244, 244, 0.9))"
       : "linear-gradient(rgba(18, 18, 18, 0.6), rgba(18, 18, 18, 0.8))";
-
     overlay.style.backgroundImage = `${overlayGradient}, url('${bgUrl}')`;
     overlay.style.backgroundSize = "cover";
     overlay.style.backgroundPosition = "center";
@@ -144,6 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function now() {
     return new Date(Date.now() + timeOffset);
   }
+
   syncTime();
   setInterval(syncTime, 60 * 60 * 1000);
 
@@ -449,14 +449,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (favorites.has(cityId)) favorites.delete(cityId);
     else favorites.add(cityId);
     saveFavorites();
-
     document
       .querySelectorAll(`.star-btn[data-city-id="${CSS.escape(cityId)}"]`)
       .forEach((b) => {
         b.classList.toggle("active", favorites.has(cityId));
         b.textContent = favorites.has(cityId) ? "★" : "☆";
       });
-
     if (activeCity && activeCity.id === cityId) updateDetailStar();
     applyFilter(searchInput.value);
   }
@@ -535,6 +533,7 @@ document.addEventListener("DOMContentLoaded", () => {
   cityDatabase.forEach((city) => {
     cityCards[city.id] = buildCard(city);
   });
+
   const fragment = document.createDocumentFragment();
   Object.values(cityCards).forEach((item) => fragment.appendChild(item.card));
   container.appendChild(fragment);
@@ -576,7 +575,6 @@ document.addEventListener("DOMContentLoaded", () => {
       updateCardWeatherUI(city.id, weatherCache[city.id]);
       return;
     }
-
     try {
       const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&hourly=temperature_2m,weathercode&timezone=auto`;
       const weatherRes = await fetch(weatherUrl);
@@ -621,7 +619,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const cardData = cityCards[cityId];
     if (!cardData) return;
     const uvColor = getUvColor(weather.uvIndex);
-
     cardData.weatherEl.innerHTML = `
             <div class="card-weather-icon">${weather.icon}</div>
             <div class="card-weather-info">
@@ -640,7 +637,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="card-forecast-day">
                 <div class="card-forecast-name">${day.day}</div>
                 <div class="card-forecast-icon">${day.icon}</div>
-                <div class="card-forecast-temp">${day.max}°<span>/${day.min}°</span></div>
+                <div class="card-forecast-temp">${day.max}° <span>/${day.min}°</span></div>
             </div>`,
       )
       .join("");
@@ -846,12 +843,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // ===== RADAR =====
   let radarMap = null,
     radarFrames = [],
+    satelliteFrames = [],
     radarCurrentPos = 0,
     radarTimer = null,
     radarLayers = {},
-    radarHost = "";
+    satelliteLayers = {},
+    activeMapLayer = "rain",
+    radarHost = "",
+    cityMarker = null,
+    detailMarkers = [];
 
   async function initRadar(city) {
     const radarSection = document.getElementById("radar-section");
@@ -874,11 +877,32 @@ document.addEventListener("DOMContentLoaded", () => {
         },
       ).addTo(radarMap);
       setTimeout(() => radarMap.invalidateSize(), 100);
+
+      document.querySelectorAll(".radar-tab").forEach((tab) => {
+        tab.addEventListener("click", () => {
+          document
+            .querySelectorAll(".radar-tab")
+            .forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+          activeMapLayer = tab.dataset.layer;
+          updateMapLayer();
+        });
+      });
     } else {
       radarMap.setView([city.lat, city.lon], 6);
-      clearRadarLayers();
+      clearMapLayers();
     }
+
+    if (cityMarker) radarMap.removeLayer(cityMarker);
+    const weather = weatherCache[city.id];
+    const popupContent = `<b>${city.name}</b><br>${weather ? weather.temp + "°C " + weather.desc : "Lädt..."}`;
+    cityMarker = L.marker([city.lat, city.lon])
+      .addTo(radarMap)
+      .bindPopup(popupContent)
+      .openPopup();
+
     await loadRainViewerData();
+    updateMapLayer();
   }
 
   async function loadRainViewerData() {
@@ -889,11 +913,118 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       radarHost = data.host;
       radarFrames = data.radar.past;
+      satelliteFrames = data.satellite.ir || [];
       radarCurrentPos = radarFrames.length - 1;
-      showRadarFrame(radarCurrentPos);
     } catch (err) {
       console.warn("RainViewer API Fehler:", err);
     }
+  }
+
+  function updateMapLayer() {
+    Object.values(radarLayers).forEach(
+      (layer) =>
+        layer &&
+        radarMap &&
+        radarMap.hasLayer(layer) &&
+        radarMap.removeLayer(layer),
+    );
+    Object.values(satelliteLayers).forEach(
+      (layer) =>
+        layer &&
+        radarMap &&
+        radarMap.hasLayer(layer) &&
+        radarMap.removeLayer(layer),
+    );
+    detailMarkers.forEach(
+      (m) => radarMap && radarMap.hasLayer(m) && radarMap.removeLayer(m),
+    );
+
+    const controls = document.querySelector(".radar-controls");
+
+    if (activeMapLayer === "rain") {
+      if (controls) controls.style.display = "flex";
+      radarCurrentPos = radarFrames.length - 1;
+      showRadarFrame(radarCurrentPos);
+    } else if (activeMapLayer === "clouds") {
+      if (controls) controls.style.display = "flex";
+      radarCurrentPos = satelliteFrames.length - 1;
+      showSatelliteFrame(radarCurrentPos);
+    } else if (activeMapLayer === "details") {
+      if (controls) controls.style.display = "none";
+      showDetailMarkers();
+    }
+  }
+
+  function showSatelliteFrame(pos) {
+    if (!satelliteFrames.length) return;
+    if (pos < 0) pos = satelliteFrames.length - 1;
+    if (pos >= satelliteFrames.length) pos = 0;
+    radarCurrentPos = pos;
+    const frame = satelliteFrames[pos];
+    if (!frame) return;
+
+    const timeLabel = document.getElementById("radar-time");
+    if (timeLabel)
+      timeLabel.textContent = new Date(frame.time * 1000).toLocaleTimeString(
+        "de-DE",
+        { hour: "2-digit", minute: "2-digit" },
+      );
+
+    Object.values(satelliteLayers).forEach(
+      (layer) =>
+        layer && radarMap.hasLayer(layer) && radarMap.removeLayer(layer),
+    );
+
+    if (!satelliteLayers[pos]) {
+      const tileUrl = `${radarHost}${frame.path}/256/{z}/{x}/{y}/0/0_0.png`;
+      const layer = L.tileLayer(tileUrl, {
+        opacity: 0.6,
+        maxZoom: 10,
+        zIndex: 10,
+      });
+      satelliteLayers[pos] = layer;
+      layer.addTo(radarMap);
+    } else {
+      satelliteLayers[pos].addTo(radarMap);
+    }
+  }
+
+  function showDetailMarkers() {
+    const active = activeCity;
+    if (!active) return;
+    radarMap.setZoom(7);
+
+    const nearbyCities = cityDatabase
+      .filter((c) => {
+        if (c.id === active.id) return false;
+        const dist = Math.sqrt(
+          Math.pow(c.lat - active.lat, 2) + Math.pow(c.lon - active.lon, 2),
+        );
+        return dist < 4;
+      })
+      .slice(0, 8);
+
+    nearbyCities.forEach((c) => {
+      const w = weatherCache[c.id];
+      const temp = w ? w.temp + "°" : "?";
+      const icon = w ? w.icon : "🌡️";
+
+      const marker = L.circleMarker([c.lat, c.lon], {
+        radius: 10,
+        fillColor: "#00ff99",
+        color: "#fff",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9,
+      }).addTo(radarMap);
+
+      marker.bindPopup(
+        `<b>${c.country} ${c.name}</b><br>${icon} ${temp} ${w ? w.desc : ""}`,
+      );
+      detailMarkers.push(marker);
+
+      if (!w) loadCardWeather(c);
+    });
   }
 
   function showRadarFrame(pos) {
@@ -910,7 +1041,8 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
     Object.values(radarLayers).forEach((layer) => {
-      if (layer) layer.setOpacity(0);
+      if (layer && radarMap && radarMap.hasLayer(layer))
+        radarMap.removeLayer(layer);
     });
 
     if (!radarLayers[pos]) {
@@ -923,16 +1055,27 @@ document.addEventListener("DOMContentLoaded", () => {
       radarLayers[pos] = layer;
       layer.addTo(radarMap);
     } else {
-      radarLayers[pos].setOpacity(0.7);
+      radarLayers[pos].addTo(radarMap);
     }
   }
 
-  function clearRadarLayers() {
+  function clearMapLayers() {
     Object.values(radarLayers).forEach((layer) => {
       if (layer && radarMap && radarMap.hasLayer(layer))
         radarMap.removeLayer(layer);
     });
-    radarLayers = {};
+    Object.values(satelliteLayers).forEach((layer) => {
+      if (layer && radarMap && radarMap.hasLayer(layer))
+        radarMap.removeLayer(layer);
+    });
+    detailMarkers.forEach((m) => {
+      if (radarMap && radarMap.hasLayer(m)) radarMap.removeLayer(m);
+    });
+    detailMarkers = [];
+    if (cityMarker) {
+      radarMap.removeLayer(cityMarker);
+      cityMarker = null;
+    }
     if (radarTimer) {
       clearInterval(radarTimer);
       radarTimer = null;
@@ -951,7 +1094,9 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       playBtn.textContent = "⏸️";
       radarTimer = setInterval(() => {
-        showRadarFrame(radarCurrentPos + 1);
+        if (activeMapLayer === "rain") showRadarFrame(radarCurrentPos + 1);
+        else if (activeMapLayer === "clouds")
+          showSatelliteFrame(radarCurrentPos + 1);
       }, 600);
     }
   }
@@ -961,8 +1106,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const url = new URL(window.location);
     url.searchParams.set("city", city.id);
     window.history.pushState({ cityId: city.id }, "", url);
-
-    detailZone.textContent = city.country + " " + city.name;
     detailZone.textContent = city.country + " " + city.name;
     overlay.classList.add("active");
     document.body.style.overflow = "hidden";
@@ -977,15 +1120,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const url = new URL(window.location);
     url.searchParams.delete("city");
     window.history.pushState({}, "", url);
-
-    overlay.style.backgroundImage = "";
     overlay.style.backgroundImage = "";
     document.body.style.overflow = "";
     activeCity = null;
     hourlyContainer.style.display = "none";
     const radarSection = document.getElementById("radar-section");
     if (radarSection) radarSection.style.display = "none";
-    clearRadarLayers();
+    clearMapLayers();
   }
 
   function updateDetailStar() {
@@ -1062,13 +1203,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const uvColor = getUvColor(w.uvIndex);
     weatherIcon.textContent = w.icon;
     weatherTemp.textContent = w.temp + "°C";
-    weatherDesc.innerHTML = `
-            <div>${w.desc}</div>
-            <div style="margin-top: 8px; font-size: 0.95rem; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; color: var(--text-secondary);">
-                <span>🌅 ${formatTime(w.sunrise)}</span>
-                <span>🌇 ${formatTime(w.sunset)}</span>
-                <span style="color:${uvColor}">☀️ UV: ${w.uvIndex !== null ? w.uvIndex : "-"}</span>
-            </div>`;
+    weatherDesc.innerHTML = `<div>${w.desc}</div><div style="margin-top: 8px; font-size: 0.95rem; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; color: var(--text-secondary);"><span>🌅 ${formatTime(w.sunrise)}</span><span>🌇 ${formatTime(w.sunset)}</span><span style="color:${uvColor}">☀️ UV: ${w.uvIndex !== null ? w.uvIndex : "-"}</span></div>`;
   }
 
   function renderForecast(forecast, cityId) {
@@ -1109,7 +1244,6 @@ document.addEventListener("DOMContentLoaded", () => {
       hourlyContainer.style.display = "none";
       return;
     }
-
     const hourly = weather.hourly;
     hourlyTitle.textContent = `⏱️ Stündlicher Verlauf – ${new Date(targetDate).toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" })}`;
     hourlyScroll.innerHTML = "";
@@ -1121,21 +1255,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const timeStr = hourly.time[i];
       if (timeStr.startsWith(targetDate)) {
         const hour = parseInt(timeStr.split("T")[1].split(":")[0]);
-
-        // Vergangene Stunden für heute ausblenden
-        if (isToday && hour < nowHour) {
-          continue;
-        }
-
+        if (isToday && hour < nowHour) continue;
         const temp = Math.round(hourly.temperature_2m[i]);
         const wCode = hourly.weathercode[i];
         const icon = WMO_ICONS[wCode] || "🌡️";
 
         const el = document.createElement("div");
         el.className = "hourly-item";
-        if (isToday && hour === nowHour) {
-          el.classList.add("current");
-        }
+        if (isToday && hour === nowHour) el.classList.add("current");
         el.innerHTML = `<div class="hourly-hour">${String(hour).padStart(2, "0")}:00</div><div class="hourly-icon">${icon}</div><div class="hourly-temp">${temp}°</div>`;
         hourlyScroll.appendChild(el);
       }
@@ -1148,6 +1275,7 @@ document.addEventListener("DOMContentLoaded", () => {
     e.stopPropagation();
     if (activeCity) toggleFavorite(activeCity.id);
   });
+
   detailClose.addEventListener("click", closeDetail);
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) closeDetail();
@@ -1159,11 +1287,13 @@ document.addEventListener("DOMContentLoaded", () => {
     applyFilter("");
     searchInput.focus();
   }
+
   searchInput.addEventListener("input", (e) => {
     clearBtn.classList.toggle("visible", e.target.value.length > 0);
     clearTimeout(filterTimeout);
     filterTimeout = setTimeout(() => applyFilter(e.target.value), 300);
   });
+
   searchInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -1175,19 +1305,21 @@ document.addEventListener("DOMContentLoaded", () => {
       activeCity ? closeDetail() : clearSearch();
     }
   });
+
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && activeCity) closeDetail();
   });
+
   clearBtn.addEventListener("click", clearSearch);
   applyFilter("");
   buildQuickAccess();
+
   const params = new URLSearchParams(window.location.search);
   const urlCityId = params.get("city");
   if (urlCityId && cityCards[urlCityId]) {
     openDetail(cityCards[urlCityId].city);
   }
 
-  // NEU: Damit der "Zurück"-Button des Browsers funktioniert
   window.addEventListener("popstate", (event) => {
     if (event.state && event.state.cityId && cityCards[event.state.cityId]) {
       openDetail(cityCards[event.state.cityId].city);
@@ -1195,6 +1327,7 @@ document.addEventListener("DOMContentLoaded", () => {
       closeDetail();
     }
   });
+
   setInterval(updateClocks, 1000);
 
   const themeBtn = document.getElementById("theme-toggle");
@@ -1212,15 +1345,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const radarPrevBtn = document.getElementById("radar-prev");
   const radarNextBtn = document.getElementById("radar-next");
   const radarPlayBtn = document.getElementById("radar-play");
+
   if (radarPrevBtn)
     radarPrevBtn.addEventListener("click", () => {
       if (radarTimer) toggleRadarPlay();
-      showRadarFrame(radarCurrentPos - 1);
+      if (activeMapLayer === "rain") showRadarFrame(radarCurrentPos - 1);
+      else if (activeMapLayer === "clouds")
+        showSatelliteFrame(radarCurrentPos - 1);
     });
+
   if (radarNextBtn)
     radarNextBtn.addEventListener("click", () => {
       if (radarTimer) toggleRadarPlay();
-      showRadarFrame(radarCurrentPos + 1);
+      if (activeMapLayer === "rain") showRadarFrame(radarCurrentPos + 1);
+      else if (activeMapLayer === "clouds")
+        showSatelliteFrame(radarCurrentPos + 1);
     });
+
   if (radarPlayBtn) radarPlayBtn.addEventListener("click", toggleRadarPlay);
 });
