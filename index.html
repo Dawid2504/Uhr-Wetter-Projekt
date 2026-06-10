@@ -4,22 +4,33 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Weltinfos - Wetter weltweit</title>
+    <link rel="stylesheet" href="style.css" />
     <link
       rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
-    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="container">
-      <header>
-        <h1>Wetter weltweit</h1>
-        <p>Aktuelle Vorhersagen & 7-Tage-Trends</p>
-      </header>
-
+      <!-- ✅ HEADER JETZT INNERHALB DES HERO-BEREICHS -->
       <div class="welcome-hero" id="welcome-hero">
         <div class="welcome-overlay"></div>
+
+        <!-- Status-Nachricht ganz oben -->
+        <div class="status" id="status-message">
+          ⏳ Zeit wird synchronisiert...
+        </div>
+
         <div class="welcome-content">
+          <!-- ✅ Header-Inhalt jetzt hier drin -->
+          <header>
+            <h1 class="welcome-title">WETTER WELTWEIT</h1>
+            <p class="welcome-subtitle">
+              Aktuelle Vorhersagen &amp; 7-Tage-Trends
+            </p>
+          </header>
+
+          <!-- Suche -->
           <div class="search-wrapper">
             <input
               type="text"
@@ -27,10 +38,12 @@
               placeholder="Stadt suchen..."
               autocomplete="off"
             />
-            <button class="clear-btn" id="clear-btn">✕</button>
+            <button class="clear-btn" id="clear-btn" title="Suche löschen">
+              ✕
+            </button>
           </div>
-          <h1 class="welcome-title">Weltinfos</h1>
-          <p class="welcome-subtitle">Wetter weltweit</p>
+
+          <!-- Wetter-Übersicht (Sonnig / Regen / Bewölkt) -->
           <div class="welcome-weather-overview">
             <div class="weather-stat">
               <div class="weather-stat-icon">☀️</div>
@@ -48,19 +61,22 @@
               <div class="weather-stat-value" id="stat-cloudy">0</div>
             </div>
           </div>
+
+          <!-- Schnellzugriff -->
           <div class="welcome-quick-access">
             <div class="quick-title">⚡ Schnellzugriff</div>
             <div class="quick-cities" id="quick-cities"></div>
           </div>
+
+          <!-- Tipp -->
           <div class="welcome-hint">
-            💡 Tipp: Klicke auf eine Stadt für Details & 7-Tage-Vorhersage!
-          </div>
-          <div class="status" id="status-message">
-            ⏳ Zeit wird synchronisiert...
+            💡 Tipp: Klicke auf eine Stadt für Details &amp; 7-Tage-Vorhersage!
           </div>
         </div>
       </div>
+      <!-- /welcome-hero -->
 
+      <!-- Favoriten -->
       <div
         class="favorites-section"
         id="favorites-section"
@@ -70,43 +86,49 @@
         <div class="clocks-grid" id="favorites-container"></div>
       </div>
 
+      <!-- Alle Städte -->
       <h2 class="section-title" id="all-title" style="display: none">
-        🌐 Alle Städte
+        Alle Städte
       </h2>
       <div class="clocks-grid" id="clocks-container"></div>
     </div>
+    <!-- /container -->
 
+    <!-- Detail-Overlay -->
     <div class="detail-overlay" id="detail-overlay">
       <button class="detail-close" id="detail-close">← Zurück</button>
       <button class="detail-star-btn" id="detail-star-btn">☆</button>
+
       <div class="detail-content">
-        <div class="detail-zone" id="detail-zone"></div>
+        <div class="detail-zone" id="detail-zone">--</div>
         <div class="detail-time" id="detail-time">--:--:--</div>
-        <div class="detail-date" id="detail-date"></div>
+        <div class="detail-date" id="detail-date">--</div>
 
         <div class="detail-weather">
           <div class="weather-loading" id="weather-loading">
-            🌤️ Wetter wird geladen...
+            ️ Wetter wird geladen...
           </div>
           <div class="weather-error" id="weather-error" style="display: none">
             Wetter nicht verfügbar
           </div>
           <div class="weather-info" id="weather-info" style="display: none">
-            <div class="weather-icon" id="weather-icon"></div>
-            <div class="weather-temp" id="weather-temp"></div>
-            <div class="weather-desc" id="weather-desc"></div>
+            <div class="weather-icon" id="weather-icon">🌡️</div>
+            <div class="weather-temp" id="weather-temp">--°C</div>
+            <div class="weather-desc" id="weather-desc">--</div>
           </div>
         </div>
 
+        <!-- 7-Tage-Vorschau -->
         <div
           class="forecast-container"
           id="forecast-container"
           style="display: none"
         >
-          <div class="forecast-title">📅 7-Tage-Vorschau</div>
+          <div class="forecast-title">7-Tage-Vorschau</div>
           <div class="forecast-scroll" id="forecast-scroll"></div>
         </div>
 
+        <!-- Stündlicher Verlauf -->
         <div
           class="hourly-container"
           id="hourly-container"
@@ -118,28 +140,26 @@
           <div class="hourly-scroll" id="hourly-scroll"></div>
         </div>
 
+        <!-- Regenradar -->
         <div class="radar-section" id="radar-section" style="display: none">
-          <h3 class="radar-title">🛰️ Live Wetter-Karte</h3>
-
+          <div class="radar-title">🛰️ Live Wetter-Karte</div>
           <div class="radar-tabs">
             <button class="radar-tab active" data-layer="rain">🌧️ Regen</button>
             <button class="radar-tab" data-layer="clouds">☁️ Wolken</button>
             <button class="radar-tab" data-layer="details">📍 Umgebung</button>
           </div>
-
           <div id="radar-map"></div>
-
           <div class="radar-controls">
             <button class="radar-btn" id="radar-prev">⏮️</button>
             <button class="radar-btn" id="radar-play">▶️</button>
             <button class="radar-btn" id="radar-next">⏭️</button>
             <div class="radar-time-label" id="radar-time">--:--</div>
-            <button class="radar-btn" id="radar-theme">🌙</button>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Theme Toggle -->
     <button class="theme-toggle-btn" id="theme-toggle">🌙</button>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
