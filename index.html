@@ -14,9 +14,9 @@
   <body>
     <div class="container">
       <!-- HERO BEREICH -->
-      <div id="welcome-hero" class="welcome-hero">
+      <div id="welcome-hero" class="welcome-hero"></div>
         <div class="welcome-overlay"></div>
-        <div class="welcome-content">
+        <div class="welcome-content"></div>
           <header>
             <h1>WETTER WELTWEIT</h1>
             <p>Aktuelle Vorhersagen & 7-Tage-Trends</p>
@@ -147,5 +147,21 @@
     <!-- Leaflet JS für das Regenradar -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="script.js"></script>
+    <footer class="site-footer">
+    <div class="footer-container">
+        <div class="footer-links">
+            <a href="/impressum.html">Impressum</a>
+            <a href="/datenschutz.html">Datenschutz</a>
+            <a href="https://dawid-makowski.de" target="_blank" rel="noopener noreferrer" class="about-link">Über mich</a>
+        </div>
+        <div class="footer-credits">
+            <p>Wetterdaten bereitgestellt von <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> & <a href="https://www.rainviewer.com/" target="_blank" rel="noopener noreferrer">RainViewer</a>.</p>
+            <p>Kartenmaterial © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> Mitwirkende & <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer">CARTO</a>.</p>
+        </div>
+        <div class="footer-copyright">
+            <p>&copy; <span id="current-year"></span> Weltinfos - Wetter weltweit. Alle Rechte vorbehalten.</p>
+        </div>
+    </div>
+</footer>
   </body>
 </html>

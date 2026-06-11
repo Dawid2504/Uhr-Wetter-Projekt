@@ -1377,4 +1377,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
   if (radarPlayBtn) radarPlayBtn.addEventListener("click", toggleRadarPlay);
+  // Automatisches Aktualisieren des Jahres im Footer
+  const yearSpan = document.getElementById("current-year");
+  if (yearSpan) {
+    yearSpan.textContent = new Date().getFullYear();
+  }
 });
