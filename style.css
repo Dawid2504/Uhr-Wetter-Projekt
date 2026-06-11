@@ -921,3 +921,67 @@ body.light-mode .welcome-hero header h1 {
 body.light-mode .welcome-hero header p {
   color: rgba(0, 0, 0, 0.6);
 }
+/* ===== FOOTER & RECHTLICHES ===== */
+.site-footer {
+  margin-top: 80px;
+  padding: 40px 20px;
+  border-top: 1px solid var(--border);
+  background-color: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  text-align: center;
+}
+
+.footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  flex-wrap: wrap;
+}
+
+.footer-links a {
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  position: relative;
+}
+
+.footer-links a:hover {
+  color: var(--accent);
+}
+
+/* Kleines Icon oder Highlight für den "Über mich" Link */
+.about-link::before {
+  content: "👨‍💻 ";
+  margin-right: 4px;
+}
+
+.footer-credits {
+  line-height: 1.6;
+  max-width: 600px;
+}
+
+.footer-credits a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.footer-credits a:hover {
+  text-decoration: underline;
+}
+
+.footer-copyright {
+  opacity: 0.6;
+  font-size: 0.8rem;
+  margin-top: 10px;
+}
