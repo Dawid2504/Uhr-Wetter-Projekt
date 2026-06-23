@@ -11,74 +11,71 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <!-- ===== WELCOME HERO ===== -->
-    <div id="welcome-hero" class="welcome-hero">
-      <div class="welcome-overlay"></div>
-      <div class="welcome-content">
-        <header>
-          <h1>Wetter weltweit</h1>
-          <p>Aktuelle Vorhersagen & 7-Tage-Trends</p>
-        </header>
+    <div class="container">
+      <div id="welcome-hero" class="welcome-hero">
+        <div class="welcome-overlay"></div>
+        <div class="welcome-content">
+          <header>
+            <h1>Wetter weltweit</h1>
+            <p>Aktuelle Vorhersagen & 7-Tage-Trends</p>
+          </header>
 
-        <div class="welcome-weather-overview">
-          <div class="weather-stat">
-            <div class="weather-stat-icon">☀️</div>
-            <div class="weather-stat-label">Sonnig</div>
-            <div class="weather-stat-value" id="stat-sunny">0</div>
+          <div class="welcome-weather-overview">
+            <div class="search-wrapper">
+              <input
+                type="text"
+                id="search-input"
+                placeholder="Stadt suchen..."
+              />
+              <button id="clear-btn" class="clear-btn">✕</button>
+            </div>
+            <div class="weather-stat">
+              <div class="weather-stat-icon">☀️</div>
+              <div class="weather-stat-label">Sonnig</div>
+              <div class="weather-stat-value" id="stat-sunny">0</div>
+            </div>
+            <div class="weather-stat">
+              <div class="weather-stat-icon">🌧️</div>
+              <div class="weather-stat-label">Regen</div>
+              <div class="weather-stat-value" id="stat-rain">0</div>
+            </div>
+            <div class="weather-stat">
+              <div class="weather-stat-icon">⛅</div>
+              <div class="weather-stat-label">Bewölkt</div>
+              <div class="weather-stat-value" id="stat-cloudy">0</div>
+            </div>
           </div>
-          <div class="weather-stat">
-            <div class="weather-stat-icon">🌧️</div>
-            <div class="weather-stat-label">Regen</div>
-            <div class="weather-stat-value" id="stat-rain">0</div>
+
+          <div id="status-message" class="status">
+            ⏳ Zeit wird synchronisiert...
           </div>
-          <div class="weather-stat">
-            <div class="weather-stat-icon">⛅</div>
-            <div class="weather-stat-label">Bewölkt</div>
-            <div class="weather-stat-value" id="stat-cloudy">0</div>
+
+          <div class="welcome-quick-access">
+            <div class="quick-title">⚡ Schnellzugriff</div>
+            <div id="quick-cities" class="quick-cities"></div>
           </div>
-        </div>
 
-        <div class="search-wrapper">
-          <input
-            type="text"
-            id="search-input"
-            placeholder="Stadt suchen..."
-            autocomplete="off"
-          />
-          <button id="clear-btn" class="clear-btn">✕</button>
-        </div>
-
-        <div class="welcome-quick-access">
-          <div class="quick-title">⚡ Schnellzugriff</div>
-          <div id="quick-cities" class="quick-cities"></div>
-        </div>
-
-        <div class="welcome-hint">
-          💡 Tipp: Klicke auf eine Stadt für Details & 7-Tage-Vorhersage!
-        </div>
-
-        <div id="status-message" class="status">
-          ⏳ Zeit wird synchronisiert...
+          <div class="welcome-hint">
+            💡 Tipp: Klicke auf eine Stadt für Details & 7-Tage-Vorhersage!
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- ===== MAIN CONTENT ===== -->
-    <div class="container">
-      <section
+      <div
         id="favorites-section"
         class="favorites-section"
         style="display: none"
       >
         <h2 class="section-title">⭐ Deine Favoriten</h2>
         <div id="favorites-container" class="clocks-grid"></div>
-      </section>
+      </div>
 
-      <h2 id="all-title" class="section-title">Alle Städte</h2>
+      <h2 id="all-title" class="section-title" style="display: none">
+        Alle Städte
+      </h2>
       <div id="clocks-container" class="clocks-grid"></div>
     </div>
 
-    <!-- ===== DETAIL OVERLAY ===== -->
     <div id="detail-overlay" class="detail-overlay">
       <button id="detail-close" class="detail-close">← Zurück</button>
       <button id="detail-star-btn" class="detail-star-btn">☆</button>
@@ -98,7 +95,7 @@
           <div id="weather-info" class="weather-info" style="display: none">
             <div id="weather-icon" class="weather-icon">🌡️</div>
             <div id="weather-temp" class="weather-temp">--°C</div>
-            <div id="weather-desc" class="weather-desc">--</div>
+            <div id="weather-desc" class="weather-desc"></div>
           </div>
         </div>
 
@@ -134,94 +131,46 @@
             <button id="radar-prev" class="radar-btn">⏮️</button>
             <button id="radar-play" class="radar-btn">▶️</button>
             <button id="radar-next" class="radar-btn">⏭️</button>
-            <span id="radar-time" class="radar-time-label">--:--</span>
+            <div id="radar-time" class="radar-time-label">--:--</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ===== THEME TOGGLE ===== -->
-    <button id="theme-toggle" class="theme-toggle-btn">🌙</button>
-
-    <!-- ===== FOOTER ===== -->
-    <!-- ===== FOOTER ===== -->
     <footer class="site-footer">
       <div class="footer-container">
         <div class="footer-links">
-          <a
-            href="#"
-            onclick="
-              showComingSoon('Impressum');
-              return false;
-            "
-            >Impressum</a
-          >
-          <a
-            href="#"
-            onclick="
-              showComingSoon('Datenschutz');
-              return false;
-            "
-            >Datenschutz</a
-          >
-          <a
-            href="https://dawid-makowski.de"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="about-link"
-            >Über mich</a
-          >
+          <a href="#">Impressum</a>
+          <a href="#">Datenschutz</a>
+          <a href="https://dawid-makowski.de" class="about-link">Über mich</a>
         </div>
         <div class="footer-credits">
-          <p>
-            Wetterdaten bereitgestellt von
-            <a
-              href="https://open-meteo.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              >Open-Meteo</a
-            >
-            &
-            <a
-              href="https://www.rainviewer.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              >RainViewer</a
-            >.
-          </p>
-          <p>
-            Kartenmaterial ©
-            <a
-              href="https://www.openstreetmap.org/copyright"
-              target="_blank"
-              rel="noopener noreferrer"
-              >OpenStreetMap</a
-            >
-            Mitwirkende &
-            <a
-              href="https://carto.com/attributions"
-              target="_blank"
-              rel="noopener noreferrer"
-              >CARTO</a
-            >.
-          </p>
+          Wetterdaten bereitgestellt von
+          <a href="https://open-meteo.com/" target="_blank">Open-Meteo</a> &
+          <a href="https://www.rainviewer.com/" target="_blank">RainViewer</a
+          >.<br />
+          Kartenmaterial ©
+          <a href="https://www.openstreetmap.org/copyright" target="_blank"
+            >OpenStreetMap</a
+          >
+          Mitwirkende &
+          <a href="https://carto.com/attributions" target="_blank">CARTO</a>.
         </div>
         <div class="footer-copyright">
-          <p>
-            &copy; <span id="current-year"></span> Weltinfos - Wetter weltweit.
-            Alle Rechte vorbehalten.
-          </p>
+          © <span id="current-year"></span> Weltinfos - Wetter weltweit. Alle
+          Rechte vorbehalten.
         </div>
       </div>
     </footer>
 
-    <!-- ===== COMING SOON MODAL ===== -->
-    <div id="coming-soon-modal" class="modal">
+    <button id="theme-toggle" class="theme-toggle-btn">🌙</button>
+
+    <div class="modal">
       <div class="modal-content">
-        <button class="modal-close" onclick="closeComingSoon()">✕</button>
+        <button class="modal-close">✕</button>
         <div class="modal-icon">🚧</div>
-        <h2 id="modal-title">In Arbeit</h2>
-        <p id="modal-text">Diese Seite wird in Kürze verfügbar sein.</p>
+        <h2>In Arbeit</h2>
+        <p>Diese Seite wird in Kürze verfügbar sein.</p>
         <div class="modal-progress">
           <div class="progress-bar"></div>
         </div>

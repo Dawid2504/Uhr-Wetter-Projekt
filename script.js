@@ -90,11 +90,9 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   function getWeatherIcon(code, isNight) {
-  if (isNight) {
-    return WMO_ICONS_NIGHT[code] || "🌡️";
+    if (isNight) return WMO_ICONS_NIGHT[code] || "🌡️";
+    return WMO_ICONS_DAY[code] || "🌡️";
   }
-  return WMO_ICONS_DAY[code] || "🌡️";
-}
 
   async function getWeatherForCity(city) {
     weatherLoading.style.display = "block";
@@ -132,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
         code: current.weathercode,
         temp: Math.round(current.temperature),
         desc: WMO_CODES[current.weathercode] || "Unbekannt",
-        icon: getWeatherIcon(current.weathercode, isNight), // KORREKTUR: Nutzt Tag/Nacht-Logik
+        icon: getWeatherIcon(current.weathercode, isNight),
         sunrise: daily.sunrise ? daily.sunrise[0] : null,
         sunset: daily.sunset ? daily.sunset[0] : null,
         uvIndex: daily.uv_index_max ? daily.uv_index_max[0] : null,
@@ -168,7 +166,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function isNightTime(sunrise, sunset, timezone) {
     if (!sunrise || !sunset || !timezone) return false;
     try {
-      // Hole die aktuelle Uhrzeit in der Zeitzone der Stadt (Format: "HH:MM")
       const nowInCity = new Date().toLocaleTimeString("de-DE", {
         timeZone: timezone,
         hour: "2-digit",
@@ -179,8 +176,6 @@ document.addEventListener("DOMContentLoaded", () => {
         ? sunrise.split("T")[1]
         : sunrise;
       const sunsetTime = sunset.includes("T") ? sunset.split("T")[1] : sunset;
-
-      // Es ist Nacht, wenn die aktuelle Zeit vor Sonnenaufgang oder nach Sonnenuntergang ist
       return nowInCity < sunriseTime || nowInCity > sunsetTime;
     } catch (e) {
       return false;
@@ -251,7 +246,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const overlayGradient = isLight
       ? "linear-gradient(rgba(244, 244, 244, 0.75), rgba(244, 244, 244, 0.9))"
       : "linear-gradient(rgba(18, 18, 18, 0.6), rgba(18, 18, 18, 0.8))";
-
     overlay.style.backgroundImage = `${overlayGradient}, url('${bgUrl}')`;
     overlay.style.backgroundSize = "cover";
     overlay.style.backgroundPosition = "center";
@@ -660,18 +654,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const weatherEl = document.createElement("div");
     weatherEl.className = "card-weather";
     weatherEl.innerHTML = `
-            <div class="card-weather-icon">🌡️</div>
-            <div class="card-weather-info">
-                <div class="card-weather-temp">--°C</div>
-                <div class="card-weather-desc">Lädt...</div>
-            </div>`;
+      <div class="card-weather-icon">🌡️</div>
+      <div class="card-weather-info">
+        <div class="card-weather-temp">--°C</div>
+        <div class="card-weather-desc">Lädt...</div>
+      </div>`;
 
     const forecastEl = document.createElement("div");
     forecastEl.className = "card-forecast";
     forecastEl.innerHTML = `
-            <div class="card-forecast-day"><div class="card-forecast-name">---</div><div class="card-forecast-icon">🌡️</div><div class="card-forecast-temp">--°</div></div>
-            <div class="card-forecast-day"><div class="card-forecast-name">---</div><div class="card-forecast-icon">🌡️</div><div class="card-forecast-temp">--°</div></div>
-            <div class="card-forecast-day"><div class="card-forecast-name">---</div><div class="card-forecast-icon">🌡️</div><div class="card-forecast-temp">--°</div></div>`;
+      <div class="card-forecast-day"><div class="card-forecast-name">---</div><div class="card-forecast-icon">🌡️</div><div class="card-forecast-temp">--°</div></div>
+      <div class="card-forecast-day"><div class="card-forecast-name">---</div><div class="card-forecast-icon">🌡️</div><div class="card-forecast-temp">--°</div></div>
+      <div class="card-forecast-day"><div class="card-forecast-name">---</div><div class="card-forecast-icon">🌡️</div><div class="card-forecast-temp">--°</div></div>`;
 
     card.append(starBtn, zoneName, timeEl, dateEl, weatherEl, forecastEl);
     card.addEventListener("click", () => openDetail(city));
@@ -732,7 +726,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const daily = weatherData.daily;
       const hourly = weatherData.hourly;
 
-      // Prüfen, ob es in der Stadt gerade Nacht ist
       const isNight = isNightTime(
         daily.sunrise ? daily.sunrise[0] : null,
         daily.sunset ? daily.sunset[0] : null,
@@ -743,14 +736,14 @@ document.addEventListener("DOMContentLoaded", () => {
         code: current.weathercode,
         temp: Math.round(current.temperature),
         desc: WMO_CODES[current.weathercode] || "Unbekannt",
-        icon: getWeatherIcon(current.weathercode, isNight), // KORREKTUR: Nutzt Tag/Nacht-Logik
+        icon: getWeatherIcon(current.weathercode, isNight),
         sunrise: daily.sunrise ? daily.sunrise[0] : null,
         sunset: daily.sunset ? daily.sunset[0] : null,
         uvIndex: daily.uv_index_max ? daily.uv_index_max[0] : null,
         forecast: daily.time.slice(0, 3).map((date, i) => ({
           date: date,
           day: new Date(date).toLocaleDateString("de-DE", { weekday: "short" }),
-          icon: getWeatherIcon(daily.weathercode[i], false), // Tages-Icon für die 3-Tage-Vorschau
+          icon: getWeatherIcon(daily.weathercode[i], false),
           max: Math.round(daily.temperature_2m_max[i]),
           min: Math.round(daily.temperature_2m_min[i]),
         })),
@@ -778,24 +771,24 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!cardData) return;
     const uvColor = getUvColor(weather.uvIndex);
     cardData.weatherEl.innerHTML = `
-            <div class="card-weather-icon">${weather.icon}</div>
-            <div class="card-weather-info">
-                <div class="card-weather-temp">${weather.temp}°C</div>
-                <div class="card-weather-desc">${weather.desc}</div>
-                <div class="card-weather-extra" style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 5px; display: flex; gap: 8px; flex-wrap: wrap;">
-                    <span>🌅 ${formatTime(weather.sunrise)}</span>
-                    <span>🌇 ${formatTime(weather.sunset)}</span>
-                    <span style="color:${uvColor}">☀️ UV: ${weather.uvIndex !== null ? weather.uvIndex : "-"}</span>
-                </div>
-            </div>`;
+      <div class="card-weather-icon">${weather.icon}</div>
+      <div class="card-weather-info">
+        <div class="card-weather-temp">${weather.temp}°C</div>
+        <div class="card-weather-desc">${weather.desc}</div>
+        <div class="card-weather-extra" style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 5px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <span>🌅 ${formatTime(weather.sunrise)}</span>
+          <span>🌇 ${formatTime(weather.sunset)}</span>
+          <span style="color:${uvColor}">☀️ UV: ${weather.uvIndex !== null ? weather.uvIndex : "-"}</span>
+        </div>
+      </div>`;
     cardData.forecastEl.innerHTML = weather.forecast
       .map(
         (day) => `
-                <div class="card-forecast-day">
-                    <div class="card-forecast-name">${day.day}</div>
-                    <div class="card-forecast-icon">${day.icon}</div>
-                    <div class="card-forecast-temp">${day.max}° <span>/${day.min}°</span></div>
-                </div>`,
+        <div class="card-forecast-day">
+          <div class="card-forecast-name">${day.day}</div>
+          <div class="card-forecast-icon">${day.icon}</div>
+          <div class="card-forecast-temp">${day.max}° <span>/${day.min}°</span></div>
+        </div>`,
       )
       .join("");
   }
@@ -827,7 +820,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function applyFilter(query, skipAPISearch = false) {
     const term = query.toLowerCase().trim();
     const sWrapper = document.querySelector(".search-wrapper");
-
     if (term === "") {
       const wOverview = document.querySelector(".welcome-weather-overview");
       if (sWrapper && wOverview) wOverview.appendChild(sWrapper);
@@ -945,7 +937,7 @@ document.addEventListener("DOMContentLoaded", () => {
         statusMessage.textContent = `Keine Städte weltweit für '${query}' gefunden.`;
       }
     } catch (error) {
-      console.warn("API-Suche fehlgeschlagen:", error);
+      console.warn("API-Suche fehlgeschlagen: ", error);
       statusMessage.textContent = "⚠️ Online-Suche nicht möglich.";
     }
   }
@@ -1027,7 +1019,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
         {
           attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions">CARTO</a>',
           subdomains: "abcd",
           maxZoom: 20,
         },
@@ -1095,7 +1087,6 @@ document.addEventListener("DOMContentLoaded", () => {
       (m) => radarMap && radarMap.hasLayer(m) && radarMap.removeLayer(m),
     );
     const controls = document.querySelector(".radar-controls");
-
     if (activeMapLayer === "rain") {
       if (controls) controls.style.display = "flex";
       radarCurrentPos = radarFrames.length - 1;
@@ -1123,7 +1114,6 @@ document.addEventListener("DOMContentLoaded", () => {
         "de-DE",
         { hour: "2-digit", minute: "2-digit" },
       );
-
     Object.values(satelliteLayers).forEach(
       (layer) =>
         layer && radarMap.hasLayer(layer) && radarMap.removeLayer(layer),
@@ -1156,7 +1146,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return dist < 4;
       })
       .slice(0, 8);
-
     nearbyCities.forEach((c) => {
       const w = weatherCache[c.id];
       const temp = w ? w.temp + "°" : "?";
@@ -1192,7 +1181,6 @@ document.addEventListener("DOMContentLoaded", () => {
         "de-DE",
         { hour: "2-digit", minute: "2-digit" },
       );
-
     Object.values(radarLayers).forEach((layer) => {
       if (layer && radarMap && radarMap.hasLayer(layer))
         radarMap.removeLayer(layer);
@@ -1296,12 +1284,12 @@ document.addEventListener("DOMContentLoaded", () => {
     weatherIcon.textContent = w.icon;
     weatherTemp.textContent = w.temp + "°C";
     weatherDesc.innerHTML = `
-            <div>${w.desc}</div>
-            <div style="margin-top: 8px; font-size: 0.95rem; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; color: var(--text-secondary);">
-                <span>🌅 ${formatTime(w.sunrise)}</span>
-                <span>🌇 ${formatTime(w.sunset)}</span>
-                <span style="color:${uvColor}">☀️ UV: ${w.uvIndex !== null ? w.uvIndex : "-"}</span>
-            </div>`;
+      <div>${w.desc}</div>
+      <div style="margin-top: 8px; font-size: 0.95rem; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; color: var(--text-secondary);">
+        <span>🌅 ${formatTime(w.sunrise)}</span>
+        <span>🌇 ${formatTime(w.sunset)}</span>
+        <span style="color:${uvColor}">☀️ UV: ${w.uvIndex !== null ? w.uvIndex : "-"}</span>
+      </div>`;
   }
 
   function renderForecast(forecast, cityId) {
@@ -1312,13 +1300,12 @@ document.addEventListener("DOMContentLoaded", () => {
       forecast.map((f) => parseInt(f.icon.replace(/[^0-9]/g, "")));
     const maxTemps = forecast.max || forecast.map((f) => f.max);
     const minTemps = forecast.min || forecast.map((f) => f.min);
-
     for (let i = 0; i < days.length; i++) {
       const date = days[i];
       const dayName = new Date(date).toLocaleDateString("de-DE", {
         weekday: "short",
       });
-      const icon = getWeatherIcon(codes[i], false); // Tages-Icon für die generelle Wochenvorschau
+      const icon = getWeatherIcon(codes[i], false);
       const max = Math.round(maxTemps[i]);
       const min = Math.round(minTemps[i]);
 
@@ -1326,9 +1313,9 @@ document.addEventListener("DOMContentLoaded", () => {
       el.className = "forecast-day";
       el.dataset.date = date;
       el.innerHTML = `
-      <div class="forecast-day-name">${dayName}</div>
-      <div class="forecast-icon">${icon}</div>
-      <div class="forecast-temps"><span>${max}°</span> <span>/${min}°</span></div>`;
+        <div class="forecast-day-name">${dayName}</div>
+        <div class="forecast-icon">${icon}</div>
+        <div class="forecast-temps"><span>${max}°</span> <span>/${min}°</span></div>`;
       el.addEventListener("click", () => showHourlyForecast(cityId, date, el));
       forecastScroll.appendChild(el);
     }
@@ -1340,7 +1327,6 @@ document.addEventListener("DOMContentLoaded", () => {
       .querySelectorAll(".forecast-day")
       .forEach((el) => el.classList.remove("selected"));
     clickedElement.classList.add("selected");
-
     const weather = weatherCache[cityId];
     if (!weather || !weather.hourly) {
       hourlyContainer.style.display = "none";
@@ -1350,7 +1336,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const hourly = weather.hourly;
     const fullForecast = weather.fullForecast;
 
-    // Sonnenauf- und -untergang für den ausgewählten Tag aus den gespeicherten Daten suchen
     let sunrise = null;
     let sunset = null;
     if (fullForecast && fullForecast.time) {
@@ -1377,17 +1362,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const temp = Math.round(hourly.temperature_2m[i]);
         const wCode = hourly.weathercode[i];
 
-        // Prüfen, ob es zu dieser spezifischen Stunde Nacht ist
         const isNightHour = isNightTimeForHour(timeStr, sunrise, sunset);
-        const icon = getWeatherIcon(wCode, isNightHour); // KORREKTUR: Zeigt nachts den Mond an
+        const icon = getWeatherIcon(wCode, isNightHour);
 
         const el = document.createElement("div");
         el.className = "hourly-item";
         if (isToday && hour === nowHour) el.classList.add("current");
         el.innerHTML = `
-        <div class="hourly-hour">${String(hour).padStart(2, "0")}:00</div>
-        <div class="hourly-icon">${icon}</div>
-        <div class="hourly-temp">${temp}°</div>`;
+          <div class="hourly-hour">${String(hour).padStart(2, "0")}:00</div>
+          <div class="hourly-icon">${icon}</div>
+          <div class="hourly-temp">${temp}°</div>`;
         hourlyScroll.appendChild(el);
       }
     }
@@ -1399,9 +1383,7 @@ document.addEventListener("DOMContentLoaded", () => {
     e.stopPropagation();
     if (activeCity) toggleFavorite(activeCity.id);
   });
-
   detailClose.addEventListener("click", closeDetail);
-
   overlay.addEventListener("click", (e) => {
     if (e.target === overlay) closeDetail();
   });
@@ -1436,7 +1418,6 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   clearBtn.addEventListener("click", clearSearch);
-
   applyFilter("");
   buildQuickAccess();
 
@@ -1461,7 +1442,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.body.classList.add("light-mode");
     themeBtn.textContent = "☀️";
   }
-
   themeBtn.addEventListener("click", () => {
     document.body.classList.toggle("light-mode");
     const isLight = document.body.classList.contains("light-mode");
@@ -1472,7 +1452,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const radarPrevBtn = document.getElementById("radar-prev");
   const radarNextBtn = document.getElementById("radar-next");
   const radarPlayBtn = document.getElementById("radar-play");
-
   if (radarPrevBtn)
     radarPrevBtn.addEventListener("click", () => {
       if (radarTimer) toggleRadarPlay();
@@ -1480,7 +1459,6 @@ document.addEventListener("DOMContentLoaded", () => {
       else if (activeMapLayer === "clouds")
         showSatelliteFrame(radarCurrentPos - 1);
     });
-
   if (radarNextBtn)
     radarNextBtn.addEventListener("click", () => {
       if (radarTimer) toggleRadarPlay();
@@ -1488,9 +1466,8 @@ document.addEventListener("DOMContentLoaded", () => {
       else if (activeMapLayer === "clouds")
         showSatelliteFrame(radarCurrentPos + 1);
     });
-
   if (radarPlayBtn) radarPlayBtn.addEventListener("click", toggleRadarPlay);
-  // Automatisches Aktualisieren des Jahres im Footer
+
   const yearSpan = document.getElementById("current-year");
   if (yearSpan) {
     yearSpan.textContent = new Date().getFullYear();

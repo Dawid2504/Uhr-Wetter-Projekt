@@ -985,6 +985,7 @@ body.light-mode .welcome-hero header h1 {
 body.light-mode .welcome-hero header p {
   color: rgba(0, 0, 0, 0.6);
 }
+
 /* ===== MODAL ===== */
 .modal {
   display: none;
