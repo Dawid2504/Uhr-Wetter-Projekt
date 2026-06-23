@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let searchTimeout = null;
   let filterTimeout = null;
 
-  const WMO_ICONS = {
+  const WMO_ICONS_DAY = {
     0: "☀️",
     1: "🌤️",
     2: "⛅",
@@ -64,6 +64,142 @@ document.addEventListener("DOMContentLoaded", () => {
     96: "⛈️",
     99: "⛈️",
   };
+
+  const WMO_ICONS_NIGHT = {
+    0: "🌙",
+    1: "🌙",
+    2: "☁️",
+    3: "☁️",
+    45: "🌫️",
+    48: "🌫️",
+    51: "🌧️",
+    53: "🌧️",
+    55: "🌧️",
+    61: "🌧️",
+    63: "🌧️",
+    65: "🌧️",
+    71: "🌨️",
+    73: "🌨️",
+    75: "❄️",
+    80: "🌧️",
+    81: "🌧️",
+    82: "⛈️",
+    95: "⛈️",
+    96: "⛈️",
+    99: "⛈️",
+  };
+
+  function getWeatherIcon(code, isNight) {
+  if (isNight) {
+    return WMO_ICONS_NIGHT[code] || "🌡️";
+  }
+  return WMO_ICONS_DAY[code] || "🌡️";
+}
+
+  async function getWeatherForCity(city) {
+    weatherLoading.style.display = "block";
+    weatherInfo.style.display = "none";
+    weatherError.style.display = "none";
+    forecastContainer.style.display = "none";
+    hourlyContainer.style.display = "none";
+
+    if (weatherCache[city.id] && weatherCache[city.id].hourly) {
+      applyDetailBackground(weatherCache[city.id].code);
+      updateDetailWeatherUI(weatherCache[city.id]);
+      renderForecast(
+        weatherCache[city.id].fullForecast || weatherCache[city.id].forecast,
+        city.id,
+      );
+      weatherLoading.style.display = "none";
+      return;
+    }
+
+    try {
+      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&hourly=temperature_2m,weathercode&timezone=auto`;
+      const weatherRes = await fetch(weatherUrl);
+      const weatherData = await weatherRes.json();
+      const current = weatherData.current_weather;
+      const daily = weatherData.daily;
+      const hourly = weatherData.hourly;
+
+      const isNight = isNightTime(
+        daily.sunrise ? daily.sunrise[0] : null,
+        daily.sunset ? daily.sunset[0] : null,
+        city.timezone,
+      );
+
+      const weather = {
+        code: current.weathercode,
+        temp: Math.round(current.temperature),
+        desc: WMO_CODES[current.weathercode] || "Unbekannt",
+        icon: getWeatherIcon(current.weathercode, isNight), // KORREKTUR: Nutzt Tag/Nacht-Logik
+        sunrise: daily.sunrise ? daily.sunrise[0] : null,
+        sunset: daily.sunset ? daily.sunset[0] : null,
+        uvIndex: daily.uv_index_max ? daily.uv_index_max[0] : null,
+        forecast: daily.time.slice(0, 3).map((date, i) => ({
+          date: date,
+          day: new Date(date).toLocaleDateString("de-DE", { weekday: "short" }),
+          icon: getWeatherIcon(daily.weathercode[i], false),
+          max: Math.round(daily.temperature_2m_max[i]),
+          min: Math.round(daily.temperature_2m_min[i]),
+        })),
+        fullForecast: {
+          time: daily.time.slice(0, 7),
+          weathercode: daily.weathercode.slice(0, 7),
+          max: daily.temperature_2m_max.slice(0, 7),
+          min: daily.temperature_2m_min.slice(0, 7),
+          sunrise: daily.sunrise ? daily.sunrise.slice(0, 7) : [],
+          sunset: daily.sunset ? daily.sunset.slice(0, 7) : [],
+        },
+        hourly: hourly,
+      };
+
+      weatherCache[city.id] = weather;
+      applyDetailBackground(weather.code);
+      updateDetailWeatherUI(weather);
+      renderForecast(weather.fullForecast, city.id);
+    } catch (error) {
+      console.warn("Wetter für " + city.name + " fehlgeschlagen: ", error);
+      weatherLoading.style.display = "none";
+      weatherError.style.display = "block";
+    }
+  }
+
+  function isNightTime(sunrise, sunset, timezone) {
+    if (!sunrise || !sunset || !timezone) return false;
+    try {
+      // Hole die aktuelle Uhrzeit in der Zeitzone der Stadt (Format: "HH:MM")
+      const nowInCity = new Date().toLocaleTimeString("de-DE", {
+        timeZone: timezone,
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      const sunriseTime = sunrise.includes("T")
+        ? sunrise.split("T")[1]
+        : sunrise;
+      const sunsetTime = sunset.includes("T") ? sunset.split("T")[1] : sunset;
+
+      // Es ist Nacht, wenn die aktuelle Zeit vor Sonnenaufgang oder nach Sonnenuntergang ist
+      return nowInCity < sunriseTime || nowInCity > sunsetTime;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function isNightTimeForHour(timeStr, sunrise, sunset) {
+    if (!sunrise || !sunset || !timeStr) return false;
+    try {
+      const hourTime = timeStr.includes("T") ? timeStr.split("T")[1] : timeStr;
+      const sunriseTime = sunrise.includes("T")
+        ? sunrise.split("T")[1]
+        : sunrise;
+      const sunsetTime = sunset.includes("T") ? sunset.split("T")[1] : sunset;
+      return hourTime < sunriseTime || hourTime > sunsetTime;
+    } catch (e) {
+      return false;
+    }
+  }
 
   const WMO_CODES = {
     0: "Klar",
@@ -596,18 +732,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const daily = weatherData.daily;
       const hourly = weatherData.hourly;
 
+      // Prüfen, ob es in der Stadt gerade Nacht ist
+      const isNight = isNightTime(
+        daily.sunrise ? daily.sunrise[0] : null,
+        daily.sunset ? daily.sunset[0] : null,
+        city.timezone,
+      );
+
       const weather = {
         code: current.weathercode,
         temp: Math.round(current.temperature),
         desc: WMO_CODES[current.weathercode] || "Unbekannt",
-        icon: WMO_ICONS[current.weathercode] || "🌡️",
+        icon: getWeatherIcon(current.weathercode, isNight), // KORREKTUR: Nutzt Tag/Nacht-Logik
         sunrise: daily.sunrise ? daily.sunrise[0] : null,
         sunset: daily.sunset ? daily.sunset[0] : null,
         uvIndex: daily.uv_index_max ? daily.uv_index_max[0] : null,
         forecast: daily.time.slice(0, 3).map((date, i) => ({
           date: date,
           day: new Date(date).toLocaleDateString("de-DE", { weekday: "short" }),
-          icon: WMO_ICONS[daily.weathercode[i]] || "🌡️",
+          icon: getWeatherIcon(daily.weathercode[i], false), // Tages-Icon für die 3-Tage-Vorschau
           max: Math.round(daily.temperature_2m_max[i]),
           min: Math.round(daily.temperature_2m_min[i]),
         })),
@@ -616,6 +759,8 @@ document.addEventListener("DOMContentLoaded", () => {
           weathercode: daily.weathercode.slice(0, 7),
           max: daily.temperature_2m_max.slice(0, 7),
           min: daily.temperature_2m_min.slice(0, 7),
+          sunrise: daily.sunrise ? daily.sunrise.slice(0, 7) : [],
+          sunset: daily.sunset ? daily.sunset.slice(0, 7) : [],
         },
         hourly: hourly,
       };
@@ -624,7 +769,7 @@ document.addEventListener("DOMContentLoaded", () => {
       updateCardWeatherUI(city.id, weather);
       updateWeatherStats();
     } catch (error) {
-      console.warn("Wetter für " + city.name + " fehlgeschlagen:", error);
+      console.warn("Wetter für " + city.name + " fehlgeschlagen: ", error);
     }
   }
 
@@ -1144,67 +1289,6 @@ document.addEventListener("DOMContentLoaded", () => {
     detailStarBtn.textContent = isFav ? "★" : "☆";
   }
 
-  async function getWeatherForCity(city) {
-    weatherLoading.style.display = "block";
-    weatherInfo.style.display = "none";
-    weatherError.style.display = "none";
-    forecastContainer.style.display = "none";
-    hourlyContainer.style.display = "none";
-
-    if (weatherCache[city.id] && weatherCache[city.id].hourly) {
-      applyDetailBackground(weatherCache[city.id].code);
-      updateDetailWeatherUI(weatherCache[city.id]);
-      renderForecast(
-        weatherCache[city.id].fullForecast || weatherCache[city.id].forecast,
-        city.id,
-      );
-      weatherLoading.style.display = "none";
-      return;
-    }
-
-    try {
-      const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max&hourly=temperature_2m,weathercode&timezone=auto`;
-      const weatherRes = await fetch(weatherUrl);
-      const weatherData = await weatherRes.json();
-      const current = weatherData.current_weather;
-      const daily = weatherData.daily;
-      const hourly = weatherData.hourly;
-
-      const weather = {
-        code: current.weathercode,
-        temp: Math.round(current.temperature),
-        desc: WMO_CODES[current.weathercode] || "Unbekannt",
-        icon: WMO_ICONS[current.weathercode] || "🌡️",
-        sunrise: daily.sunrise ? daily.sunrise[0] : null,
-        sunset: daily.sunset ? daily.sunset[0] : null,
-        uvIndex: daily.uv_index_max ? daily.uv_index_max[0] : null,
-        forecast: daily.time.slice(0, 3).map((date, i) => ({
-          date: date,
-          day: new Date(date).toLocaleDateString("de-DE", { weekday: "short" }),
-          icon: WMO_ICONS[daily.weathercode[i]] || "🌡️",
-          max: Math.round(daily.temperature_2m_max[i]),
-          min: Math.round(daily.temperature_2m_min[i]),
-        })),
-        fullForecast: {
-          time: daily.time.slice(0, 7),
-          weathercode: daily.weathercode.slice(0, 7),
-          max: daily.temperature_2m_max.slice(0, 7),
-          min: daily.temperature_2m_min.slice(0, 7),
-        },
-        hourly: hourly,
-      };
-
-      weatherCache[city.id] = weather;
-      applyDetailBackground(weather.code);
-      updateDetailWeatherUI(weather);
-      renderForecast(weather.fullForecast, city.id);
-    } catch (error) {
-      console.warn("Wetter für " + city.name + " fehlgeschlagen:", error);
-      weatherLoading.style.display = "none";
-      weatherError.style.display = "block";
-    }
-  }
-
   function updateDetailWeatherUI(w) {
     weatherLoading.style.display = "none";
     weatherInfo.style.display = "flex";
@@ -1234,7 +1318,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const dayName = new Date(date).toLocaleDateString("de-DE", {
         weekday: "short",
       });
-      const icon = WMO_ICONS[codes[i]] || "🌡️";
+      const icon = getWeatherIcon(codes[i], false); // Tages-Icon für die generelle Wochenvorschau
       const max = Math.round(maxTemps[i]);
       const min = Math.round(minTemps[i]);
 
@@ -1242,9 +1326,9 @@ document.addEventListener("DOMContentLoaded", () => {
       el.className = "forecast-day";
       el.dataset.date = date;
       el.innerHTML = `
-                <div class="forecast-day-name">${dayName}</div>
-                <div class="forecast-icon">${icon}</div>
-                <div class="forecast-temps"><span>${max}°</span> <span>/${min}°</span></div>`;
+      <div class="forecast-day-name">${dayName}</div>
+      <div class="forecast-icon">${icon}</div>
+      <div class="forecast-temps"><span>${max}°</span> <span>/${min}°</span></div>`;
       el.addEventListener("click", () => showHourlyForecast(cityId, date, el));
       forecastScroll.appendChild(el);
     }
@@ -1256,14 +1340,30 @@ document.addEventListener("DOMContentLoaded", () => {
       .querySelectorAll(".forecast-day")
       .forEach((el) => el.classList.remove("selected"));
     clickedElement.classList.add("selected");
+
     const weather = weatherCache[cityId];
     if (!weather || !weather.hourly) {
       hourlyContainer.style.display = "none";
       return;
     }
+
     const hourly = weather.hourly;
+    const fullForecast = weather.fullForecast;
+
+    // Sonnenauf- und -untergang für den ausgewählten Tag aus den gespeicherten Daten suchen
+    let sunrise = null;
+    let sunset = null;
+    if (fullForecast && fullForecast.time) {
+      const dayIndex = fullForecast.time.indexOf(targetDate);
+      if (dayIndex !== -1) {
+        sunrise = fullForecast.sunrise ? fullForecast.sunrise[dayIndex] : null;
+        sunset = fullForecast.sunset ? fullForecast.sunset[dayIndex] : null;
+      }
+    }
+
     hourlyTitle.textContent = `⏱️ Stündlicher Verlauf – ${new Date(targetDate).toLocaleDateString("de-DE", { weekday: "long", day: "2-digit", month: "long" })}`;
     hourlyScroll.innerHTML = "";
+
     const nowHour = new Date().getHours();
     const todayDateStr = new Date().toISOString().split("T")[0];
     const isToday = targetDate === todayDateStr;
@@ -1273,17 +1373,21 @@ document.addEventListener("DOMContentLoaded", () => {
       if (timeStr.startsWith(targetDate)) {
         const hour = parseInt(timeStr.split("T")[1].split(":")[0]);
         if (isToday && hour < nowHour) continue;
+
         const temp = Math.round(hourly.temperature_2m[i]);
         const wCode = hourly.weathercode[i];
-        const icon = WMO_ICONS[wCode] || "🌡️";
+
+        // Prüfen, ob es zu dieser spezifischen Stunde Nacht ist
+        const isNightHour = isNightTimeForHour(timeStr, sunrise, sunset);
+        const icon = getWeatherIcon(wCode, isNightHour); // KORREKTUR: Zeigt nachts den Mond an
 
         const el = document.createElement("div");
         el.className = "hourly-item";
         if (isToday && hour === nowHour) el.classList.add("current");
         el.innerHTML = `
-                    <div class="hourly-hour">${String(hour).padStart(2, "0")}:00</div>
-                    <div class="hourly-icon">${icon}</div>
-                    <div class="hourly-temp">${temp}°</div>`;
+        <div class="hourly-hour">${String(hour).padStart(2, "0")}:00</div>
+        <div class="hourly-icon">${icon}</div>
+        <div class="hourly-temp">${temp}°</div>`;
         hourlyScroll.appendChild(el);
       }
     }
