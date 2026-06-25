@@ -820,19 +820,41 @@ document.addEventListener("DOMContentLoaded", () => {
   function applyFilter(query, skipAPISearch = false) {
     const term = query.toLowerCase().trim();
     const sWrapper = document.querySelector(".search-wrapper");
+
+    // 1. Fokus und Cursor-Position merken, bevor wir das DOM umbauen
+    const isFocused = document.activeElement === searchInput;
+    let cursorPos = 0;
+    if (isFocused) {
+      cursorPos = searchInput.selectionStart;
+    }
+
+    // 2. Suchleiste verschieben (Nur wenn nötig, um unnötige DOM-Updates zu vermeiden)
     if (term === "") {
       const wOverview = document.querySelector(".welcome-weather-overview");
-      if (sWrapper && wOverview) wOverview.appendChild(sWrapper);
-      if (statusMessage.parentElement !== welcomeHero)
+      if (sWrapper && wOverview && sWrapper.parentNode !== wOverview) {
+        wOverview.appendChild(sWrapper);
+      }
+      if (statusMessage.parentElement !== welcomeHero) {
         welcomeHero.appendChild(statusMessage);
+      }
     } else {
-      if (sWrapper && welcomeHero)
+      if (sWrapper && welcomeHero && sWrapper.nextSibling !== welcomeHero) {
         welcomeHero.parentNode.insertBefore(sWrapper, welcomeHero);
-      if (statusMessage.parentElement === welcomeHero)
+      }
+      if (statusMessage.parentElement === welcomeHero) {
         welcomeHero.parentNode.insertBefore(
           statusMessage,
           welcomeHero.nextSibling,
         );
+      }
+    }
+
+    // 3. Fokus und Cursor sofort wiederherstellen!
+    if (isFocused) {
+      setTimeout(() => {
+        searchInput.focus();
+        searchInput.setSelectionRange(cursorPos, cursorPos);
+      }, 0);
     }
 
     container.innerHTML = "";
