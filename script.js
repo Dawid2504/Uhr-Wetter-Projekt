@@ -1475,4 +1475,196 @@ document.addEventListener("DOMContentLoaded", () => {
   if (yearSpan) {
     yearSpan.textContent = new Date().getFullYear();
   }
+  // Neue Funktion zur Berechnung des Sonnen/Mond-Verlaufs
+  function updateSunMoonTracker(sunriseStr, sunsetStr, timezone) {
+    const tracker = document.getElementById("sun-moon-tracker");
+    const icon = document.getElementById("tracker-icon");
+    const startLabel = document.getElementById("tracker-start");
+    const endLabel = document.getElementById("tracker-end");
+
+    if (!sunriseStr || !sunsetStr || !timezone) {
+      tracker.style.display = "none";
+      return;
+    }
+
+    tracker.style.display = "block";
+
+    const nowStr = new Date().toLocaleString("en-US", { timeZone: timezone });
+    const now = new Date(nowStr).getTime();
+    const sunrise = new Date(sunriseStr).getTime();
+    const sunset = new Date(sunsetStr).getTime();
+
+    let isDay = now >= sunrise && now <= sunset;
+    let start, end, progress;
+
+    if (isDay) {
+      start = sunrise;
+      end = sunset;
+      icon.textContent = "☀️";
+      startLabel.textContent = `🌅 ${formatTime(sunriseStr)}`;
+      endLabel.textContent = `🌇 ${formatTime(sunsetStr)}`;
+    } else {
+      icon.textContent = "🌙";
+      const oneDay = 24 * 60 * 60 * 1000;
+
+      if (now < sunrise) {
+        start = sunset - oneDay;
+        end = sunrise;
+      } else {
+        start = sunset;
+        end = sunrise + oneDay;
+      }
+
+      startLabel.textContent = `🌇 ${formatTime(new Date(start).toISOString())}`;
+      endLabel.textContent = `🌅 ${formatTime(new Date(end).toISOString())}`;
+    }
+
+    const totalDuration = end - start;
+    const elapsed = now - start;
+    progress = Math.max(0, Math.min(1, elapsed / totalDuration));
+
+    const angle = Math.PI - progress * Math.PI;
+    const radius = 125;
+
+    const x = radius + radius * Math.cos(angle);
+    const y = radius * Math.sin(angle);
+
+    icon.style.left = `${x}px`;
+    icon.style.bottom = `${y}px`;
+  }
+  // ===== 1. FEHLENDE SONNEN-/MOND-FUNKTION =====
+  function updateSunMoonTracker(sunriseISO, sunsetISO, timezone) {
+    const tracker = document.getElementById("sun-moon-tracker");
+    const icon = document.getElementById("tracker-icon");
+    const startSpan = document.getElementById("tracker-start");
+    const endSpan = document.getElementById("tracker-end");
+
+    if (!tracker || !icon || !startSpan || !endSpan) return;
+
+    if (!sunriseISO || !sunsetISO) {
+      tracker.style.display = "none";
+      return;
+    }
+
+    tracker.style.display = "block";
+
+    const sunRiseTime = new Date(sunriseISO);
+    const sunSetTime = new Date(sunsetISO);
+
+    // Aktuelle Zeit in der Zeitzone der ausgewählten Stadt
+    const nowInCityStr = new Date().toLocaleString("en-US", {
+      timeZone: timezone,
+    });
+    const cityNow = new Date(nowInCityStr);
+
+    startSpan.textContent = sunRiseTime.toLocaleTimeString("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    endSpan.textContent = sunSetTime.toLocaleTimeString("de-DE", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    // Berechnung des Fortschritts
+    const totalDuration = sunSetTime.getTime() - sunRiseTime.getTime();
+    const elapsed = cityNow.getTime() - sunRiseTime.getTime();
+
+    let progress = elapsed / totalDuration;
+
+    if (progress < 0 || progress > 1) {
+      // Es ist Nacht
+      icon.textContent = "🌙";
+      progress = progress < 0 ? 0 : 1; // Bleibt am Rand stehen
+    } else {
+      // Es ist Tag
+      icon.textContent = "☀️";
+    }
+
+    // Mathematische Berechnung der Bogen-Position (Halbkreis)
+    const angle = progress * Math.PI; // 0 bis Pi (0 bis 180 Grad)
+    const x = 50 - 50 * Math.cos(angle); // Links in % (0% bis 100%)
+    const y = Math.sin(angle) * 100; // Höhe in % (0% bis 100%)
+
+    icon.style.left = `${x}%`;
+    icon.style.bottom = `${y}%`;
+  }
+
+  // ===== 2. MODAL LOGIK FÜR IMPRESSUM & DATENSCHUTZ =====
+  const modal = document.querySelector(".modal");
+  const modalContent = document.querySelector(".modal-content");
+
+  // Funktion zum Öffnen der Rechtstexte im Popup
+  function openModal(title, contentHTML) {
+    modalContent.innerHTML = `
+      <button class="modal-close" id="dynamic-modal-close">✕</button>
+      <h2>${title}</h2>
+      <div style="text-align: left; font-size: 0.95rem; line-height: 1.6; max-height: 60vh; overflow-y: auto; padding: 10px;">
+        ${contentHTML}
+      </div>
+    `;
+
+    // Schließen-Button im Modal
+    document
+      .getElementById("dynamic-modal-close")
+      .addEventListener("click", () => {
+        modal.classList.remove("active");
+      });
+
+    modal.classList.add("active");
+  }
+
+  // Modal schließen, wenn man außerhalb (ins Dunkle) klickt
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.classList.remove("active");
+  });
+
+  const linkImpressum = document.getElementById("link-impressum");
+  const linkDatenschutz = document.getElementById("link-datenschutz");
+
+  if (linkImpressum) {
+    linkImpressum.addEventListener("click", (e) => {
+      e.preventDefault();
+      openModal(
+        "Impressum",
+        `
+        <h3>Angaben gemäß § 5 TMG</h3>
+        <p>Dawid Makowski<br>
+        Website: <a href="https://dawid-makowski.de" target="_blank" style="color: var(--accent);">dawid-makowski.de</a></p>
+        
+        <h3>Kontakt</h3>
+        <p>Bitte nutzen Sie die Kontaktmöglichkeiten auf meiner persönlichen Webseite zur Kontaktaufnahme.</p>
+        
+        <h3>Haftung für Inhalte</h3>
+        <p>Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen.</p>
+        
+        <h3>Urheberrecht</h3>
+        <p>Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten unterliegen dem deutschen Urheberrecht. Beiträge Dritter sind als solche gekennzeichnet.</p>
+      `,
+      );
+    });
+  }
+
+  if (linkDatenschutz) {
+    linkDatenschutz.addEventListener("click", (e) => {
+      e.preventDefault();
+      openModal(
+        "Datenschutzerklärung",
+        `
+        <h3>1. Datenschutz auf einen Blick</h3>
+        <p>Die folgenden Hinweise geben einen einfachen Überblick darüber, was mit Ihren personenbezogenen Daten passiert, wenn Sie diese Website besuchen.</p>
+        
+        <h3>2. Datenerfassung auf dieser Website</h3>
+        <p><strong>Verantwortlicher:</strong> Dawid Makowski</p>
+        <p>Diese Wetter-Anwendung ruft Wetter- und Kartendaten über externe APIs (wie Open-Meteo, RainViewer, OpenStreetMap) ab. Bei diesen Anfragen wird Ihre IP-Adresse aus technischen Gründen an die jeweiligen Server der Dienstanbieter übertragen, um die Wetterdaten korrekt an Sie ausliefern zu können.</p>
+        
+        <h3>3. Lokale Speicherung (Local Storage)</h3>
+        <p>Zur Verbesserung der Benutzererfahrung werden Ihre gespeicherten Favoriten (Städte) und das gewählte Theme (Hell/Dunkel) ausschließlich lokal in Ihrem Browser (Local Storage) gespeichert. Es findet keine Übertragung dieser Einstellungsdaten an unsere Server statt. Wir verwenden <strong>keine Tracking-Cookies</strong>.</p>
+        
+        <h3>4. Externe Links</h3>
+        <p>Auf dieser Website befinden sich Links zu externen Websites. Für den Datenschutz auf diesen externen Seiten sind wir nicht verantwortlich.</p>
+      `,
+      );
+    });
+  }
 });
