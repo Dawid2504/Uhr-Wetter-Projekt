@@ -280,9 +280,133 @@ header p {
   transition:
     opacity 0.4s ease,
     max-height 0.4s ease;
-  background-image: url("images/hintergrund.jpg");
-  background-size: cover;
-  background-position: center;
+  background: linear-gradient(
+    135deg,
+    #0a0f0d 0%,
+    #101b18 25%,
+    #0d1f22 50%,
+    #101b18 75%,
+    #0a0f0d 100%
+  );
+  background-size: 400% 400%;
+  animation: heroGradient 18s ease infinite;
+}
+
+/* Animierter Verlauf des Hintergrunds */
+@keyframes heroGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Schwebende, leuchtende "Aurora"-Blasen */
+.welcome-hero::before,
+.welcome-hero::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.welcome-hero::before {
+  width: 500px;
+  height: 500px;
+  top: -150px;
+  left: -100px;
+  background: radial-gradient(
+    circle,
+    rgba(0, 255, 153, 0.55) 0%,
+    rgba(0, 255, 153, 0) 70%
+  );
+  animation: floatBlob1 20s ease-in-out infinite;
+}
+
+.welcome-hero::after {
+  width: 450px;
+  height: 450px;
+  bottom: -120px;
+  right: -80px;
+  background: radial-gradient(
+    circle,
+    rgba(0, 204, 255, 0.45) 0%,
+    rgba(0, 204, 255, 0) 70%
+  );
+  animation: floatBlob2 26s ease-in-out infinite;
+}
+
+@keyframes floatBlob1 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(120px, 80px) scale(1.2);
+  }
+  66% {
+    transform: translate(60px, 160px) scale(0.9);
+  }
+}
+
+@keyframes floatBlob2 {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-100px, -60px) scale(1.15);
+  }
+  66% {
+    transform: translate(-160px, -40px) scale(0.95);
+  }
+}
+
+/* Heller Hintergrund im Light-Mode */
+body.light-mode .welcome-hero {
+  background: linear-gradient(
+    135deg,
+    #e8f5f0 0%,
+    #d4ede5 25%,
+    #dbeef2 50%,
+    #d4ede5 75%,
+    #e8f5f0 100%
+  );
+  background-size: 400% 400%;
+  animation: heroGradient 18s ease infinite;
+}
+
+body.light-mode .welcome-overlay {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(240, 250, 247, 0.4) 100%
+  );
+}
+
+body.light-mode .welcome-hero::before {
+  opacity: 0.35;
+}
+
+body.light-mode .welcome-hero::after {
+  opacity: 0.3;
+}
+
+/* Reduzierte Bewegung respektieren */
+@media (prefers-reduced-motion: reduce) {
+  .welcome-hero,
+  .welcome-hero::before,
+  .welcome-hero::after,
+  body.light-mode .welcome-hero {
+    animation: none;
+  }
 }
 
 .welcome-overlay {
