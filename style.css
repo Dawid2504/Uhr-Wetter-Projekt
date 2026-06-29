@@ -283,13 +283,14 @@ header p {
   background: linear-gradient(
     135deg,
     #0a0f0d 0%,
-    #101b18 25%,
-    #0d1f22 50%,
-    #101b18 75%,
+    #0d3b2e 20%,
+    #0a4d5c 40%,
+    #103b55 60%,
+    #0d3b2e 80%,
     #0a0f0d 100%
   );
-  background-size: 400% 400%;
-  animation: heroGradient 18s ease infinite;
+  background-size: 300% 300%;
+  animation: heroGradient 14s ease infinite;
 }
 
 /* Animierter Verlauf des Hintergrunds */
@@ -311,8 +312,8 @@ header p {
   content: "";
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.5;
+  filter: blur(70px);
+  opacity: 0.85;
   z-index: 0;
   pointer-events: none;
 }
@@ -373,38 +374,47 @@ header p {
 body.light-mode .welcome-hero {
   background: linear-gradient(
     135deg,
-    #e8f5f0 0%,
-    #d4ede5 25%,
-    #dbeef2 50%,
-    #d4ede5 75%,
-    #e8f5f0 100%
+    #a7f3d8 0%,
+    #6ee7c4 22%,
+    #5ed6e8 45%,
+    #7ee0d0 68%,
+    #a7f3d8 100%
   );
-  background-size: 400% 400%;
-  animation: heroGradient 18s ease infinite;
+  background-size: 300% 300%;
+  animation: heroGradient 12s ease infinite;
 }
 
 body.light-mode .welcome-overlay {
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.55) 0%,
-    rgba(240, 250, 247, 0.4) 100%
+    rgba(255, 255, 255, 0.25) 0%,
+    rgba(240, 250, 247, 0.1) 100%
   );
 }
 
 body.light-mode .welcome-hero::before {
-  opacity: 0.35;
+  opacity: 0.7;
+  background: radial-gradient(
+    circle,
+    rgba(0, 200, 120, 0.65) 0%,
+    rgba(0, 200, 120, 0) 70%
+  );
 }
 
 body.light-mode .welcome-hero::after {
-  opacity: 0.3;
+  opacity: 0.6;
+  background: radial-gradient(
+    circle,
+    rgba(0, 160, 220, 0.6) 0%,
+    rgba(0, 160, 220, 0) 70%
+  );
 }
 
-/* Reduzierte Bewegung respektieren */
+/* Reduzierte Bewegung: nur die schwebenden Blobs anhalten,
+   der Farbverlauf bleibt aktiv (dezent genug) */
 @media (prefers-reduced-motion: reduce) {
-  .welcome-hero,
   .welcome-hero::before,
-  .welcome-hero::after,
-  body.light-mode .welcome-hero {
+  .welcome-hero::after {
     animation: none;
   }
 }
