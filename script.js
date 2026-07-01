@@ -354,6 +354,7 @@ document.addEventListener("DOMContentLoaded", () => {
       updateDetailWeatherUI(cached);
       renderForecast(cached.fullForecast, city.id);
       weatherLoading.style.display = "none";
+      refreshCityMarkerPopup(city);
       return;
     }
 
@@ -362,6 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
       applyDetailBackground(weather.code);
       updateDetailWeatherUI(weather);
       renderForecast(weather.fullForecast, city.id);
+      refreshCityMarkerPopup(city);
     } catch (error) {
       console.warn("Wetter für " + city.name + " fehlgeschlagen: ", error);
       weatherLoading.style.display = "none";
@@ -1406,6 +1408,20 @@ document.addEventListener("DOMContentLoaded", () => {
     cityMarker = null,
     detailMarkers = [];
 
+  function buildMarkerPopup(city) {
+    const weather = weatherCache[city.id];
+    return `<b>${city.name}</b><br>${
+      weather ? weather.temp + "°C " + weather.desc : "Lädt..."
+    }`;
+  }
+
+  function refreshCityMarkerPopup(city) {
+    if (!cityMarker || !activeCity || activeCity.id !== city.id) return;
+    const wasOpen = cityMarker.isPopupOpen();
+    cityMarker.setPopupContent(buildMarkerPopup(city));
+    if (wasOpen) cityMarker.openPopup();
+  }
+
   async function initRadar(city) {
     const radarSection = document.getElementById("radar-section");
     if (!radarSection) return;
@@ -1443,11 +1459,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (cityMarker) radarMap.removeLayer(cityMarker);
-    const weather = weatherCache[city.id];
-    const popupContent = `<b>${city.name}</b><br>${weather ? weather.temp + "°C " + weather.desc : "Lädt..."}`;
     cityMarker = L.marker([city.lat, city.lon])
       .addTo(radarMap)
-      .bindPopup(popupContent)
+      .bindPopup(buildMarkerPopup(city))
       .openPopup();
 
     await loadRainViewerData();
