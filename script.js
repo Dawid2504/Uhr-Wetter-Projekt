@@ -105,10 +105,6 @@ document.addEventListener("DOMContentLoaded", () => {
       ? Math.round((celsius * 9) / 5 + 32)
       : Math.round(celsius);
   }
-  // Liefert das Gradzeichen inkl. Einheit, optional ohne "C"/"F".
-  function unitLabel(withDeg = true) {
-    return (withDeg ? "°" : "") + tempUnit;
-  }
   // Formatiert einen °C-Wert komplett (z. B. "21°C").
   function fmtTemp(celsius, withUnit = true) {
     if (celsius == null || isNaN(celsius))
@@ -323,7 +319,6 @@ document.addEventListener("DOMContentLoaded", () => {
         date: date,
         day: new Date(date).toLocaleDateString("de-DE", { weekday: "short" }),
         code: daily.weathercode[i],
-        icon: getWeatherIcon(daily.weathercode[i], false),
         max: Math.round(daily.temperature_2m_max[i]),
         min: Math.round(daily.temperature_2m_min[i]),
       })),
@@ -1846,12 +1841,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderForecast(forecast, cityId) {
     forecastScroll.innerHTML = "";
-    const days = forecast.time || forecast;
-    const codes =
-      forecast.weathercode ||
-      forecast.map((f) => parseInt(f.icon.replace(/[^0-9]/g, "")));
-    const maxTemps = forecast.max || forecast.map((f) => f.max);
-    const minTemps = forecast.min || forecast.map((f) => f.min);
+    const days = forecast.time;
+    const codes = forecast.weathercode;
+    const maxTemps = forecast.max;
+    const minTemps = forecast.min;
     for (let i = 0; i < days.length; i++) {
       const date = days[i];
       const dayName = new Date(date).toLocaleDateString("de-DE", {
